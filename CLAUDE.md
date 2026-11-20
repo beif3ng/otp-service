@@ -190,3 +190,4 @@ backend/
   - [ ] 2. `/code-review high backend/` — баги и «Контракт»; `--fix` — только после просмотра находок
   - [ ] 3. Security-проверка `backend/app/` (обход IP-лимита, код в логах, гонки в `verify`) — запросом агенту: `/security-review` видит только diff ветки
   - [ ] 4. `/simplify` по ядру с явным путём (`app/otp.py`, `app/routers/otp.py`, `app/config.py`)
+- [ ] Разобраться в коде B до Q&A на демо (`history.py`, `/demo`, `scripts/attack.py`, `tests/`, дашборд) — сессия socratic-tutor — A
