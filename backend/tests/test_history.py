@@ -18,7 +18,7 @@ def test_shape_is_96_buckets_of_15_minutes_ending_now(api):
     h = get(api)
     assert h["bucket_seconds"] == 900
     assert len(h["buckets"]) == 96
-    assert h["buckets"][-1] == {"ts": "2026-11-21T09:00:00+06:00", "brute": 0, "pumping": 0}
+    assert h["buckets"][-1] == {"ts": "2026-11-21T09:00:00+06:00", "brute": 0, "pumping": 0, "saved_som": 0}
     assert h["buckets"][0]["ts"] == "2026-11-20T09:15:00+06:00"
 
 
@@ -29,7 +29,12 @@ def test_counts_brute_force_and_pumping(api):
         assert api.verify(wrong(code)).status_code == 401
     for _ in range(2):
         assert api.send().status_code == 429
-    assert last(api) == {"ts": "2026-11-21T09:00:00+06:00", "brute": 3, "pumping": 2}
+    assert last(api) == {
+        "ts": "2026-11-21T09:00:00+06:00",
+        "brute": 3,
+        "pumping": 2,
+        "saved_som": round(2 * config.SMS_PRICE_SOM, 2),
+    }
 
 
 def test_reads_only_new_lines_on_each_call(api):
@@ -68,7 +73,7 @@ def test_existing_journal_is_read_from_the_start(api, tmp_path, monkeypatch):
     log.write_text("".join(json.dumps(e) + "\n" for e in lines) + "not json\n[1]\n", "utf-8")
     monkeypatch.setattr(config, "SECURITY_LOG", log)
     h = get(api)["buckets"]
-    assert h[-2] == {"ts": "2026-11-21T08:45:00+06:00", "brute": 1, "pumping": 0}
+    assert h[-2] == {"ts": "2026-11-21T08:45:00+06:00", "brute": 1, "pumping": 0, "saved_som": 0}
 
 
 def test_unfinished_last_line_waits_for_its_newline(api, tmp_path, monkeypatch):
