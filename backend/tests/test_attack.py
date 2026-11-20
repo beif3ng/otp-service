@@ -1,7 +1,7 @@
 """scripts/attack.py against the app in-process: the jury attack of 1000 attempts never gets in.
 
 TestClient is an httpx.Client, so the attacks run unchanged; one worker, fixed clock.
-X-Forwarded-For is ignored here (no uvicorn), every request comes from the TestClient IP.
+Every request comes from the TestClient IP; scripts/attack.py itself uses 127.0.0.1 and 127.0.0.2.
 """
 
 import pytest
