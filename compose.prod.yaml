@@ -28,6 +28,20 @@ services:
       - backend
     restart: unless-stopped
 
+  # Demo SMS channel: tails the outbox and sends codes to Telegram chats bound to numbers.
+  sms-gateway:
+    build: ./backend
+    command: ["python", "-m", "app.sms_gateway"]
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      OTP_OUTBOX: /outbox/sms.jsonl
+      GATEWAY_DB: /gateway/bindings.json
+    volumes:
+      - ./outbox:/outbox:ro
+      - gateway-data:/gateway
+    restart: on-failure  # no token -> exits 0 and stays off
+
 volumes:
+  gateway-data:
   caddy_data:
   caddy_config:
