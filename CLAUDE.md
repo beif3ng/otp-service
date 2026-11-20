@@ -40,6 +40,7 @@ compose.yaml            бонус: backend + Redis
 compose.prod.yaml       только VM (демо): + Caddy с HTTPS, backend без открытого порта
 Caddyfile               только VM: прокси на backend, X-Forwarded-For = реальный IP клиента
 .github/workflows/deploy.yml  push в main → SSH на VM → git pull + compose up
+assets/                 аватар бота, лого Mocha / Latte (SVG + PNG); пересборка — `python assets/gen.py`
 backend/
   app/main.py           FastAPI app, подключение роутеров — без prefix /api, пути ровно как в ТЗ
   app/config.py         тайминги и лимиты из env, дефолты = ТЗ
@@ -171,5 +172,4 @@ backend/
 
 - [ ] Слайды 3, 4, 6 (решение, демо, польза и следующие шаги) — B
 - [ ] Продукт: `/demo` — вход в выдуманный сервис доставки — B
-- [ ] Перекрасить аватар бота в Catppuccin Mocha — A
-- [ ] Лого: две версии без плашки — акцент Mocha (тёмный фон), акцент Latte (светлый) — A
+- [ ] Аватар бота: загрузить `assets/avatar.png` в BotFather (`/setuserpic`) — A
