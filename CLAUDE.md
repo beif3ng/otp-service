@@ -57,6 +57,7 @@ backend/
 | `requirements.txt` | `backend/` | `uv export --no-hashes --no-dev -o requirements.txt` |
 | Запуск как у жюри | корень | команда из `README.md`; проверяем перед каждым push в `main` |
 | Docker (бонус) | корень | `docker compose up --build` |
+| Слайды | `../hackathon/pitch/` (старый репо `beif3ng/hackathon`, не этот) | правим текст в `build.js`, `npm run build` → `pitch.pptx` → импорт в Google Slides |
 | Проверка дашборда агентом | любая | `agent-browser open http://localhost:8000/dashboard`, затем `snapshot`, `errors`, `close` |
 
 ## Правила
@@ -151,6 +152,8 @@ backend/
 - [ ] К 21:00: базовая часть запускается по README на чистой машине — A + B
 - [ ] Бонус: Docker Compose + Redis с TTL — A
 - [ ] Бонус: дашборд событий `/dashboard` + «отбито» и «сэкономлено N сом» — B
+- [ ] Слайды 1, 2, 5 (проблема + цифра, кто страдает, архитектура) в `hackathon/pitch/build.js` — после ядра и тестов, до 08:00 — A
+- [ ] Слайды 3, 4, 6 (решение, демо, польза и следующие шаги) — B; слайд 7 (команда) — A + B
 - [ ] Продукт: `/demo` — вход в выдуманный сервис доставки — B
 - [ ] Продукт: `SMS_PRICE_SOM` и отклонённые `send` в событиях; лимит `send` по IP за env-флагом (выкл.) — A
 - [ ] `attack.py`: добавить сценарий SMS pumping (`send` по 50 номерам) — B
