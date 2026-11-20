@@ -242,7 +242,10 @@ def _verify(msisdn: str, code: str, ip: str, n: Number, t: float) -> Result:
     candidate = _hash(msisdn, code)
     if _locked(n, t):
         return Result(423, "number is locked")
-    if n.otp_hash is None or n.otp_used:
+    if n.otp_hash is None:
+        return Result(401, "no active code")
+    if n.otp_used:
+        _event(t, "verify_reused", msisdn, ip)  # a spent code again: a replay, not a typo
         return Result(401, "no active code")
     if t - n.otp_created >= config.OTP_TTL:
         return Result(410, "code expired")

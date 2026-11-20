@@ -195,6 +195,7 @@ const KINDS = {
   otp_sent:             ["Код выдан", "info"],
   verify_ok:            ["Успешный вход", "good"],
   verify_failed:        ["Неверный код", "attack"],
+  verify_reused:        ["Повтор использованного кода", "refused"],
   number_locked:        ["Номер заблокирован", "refused"],
   verify_rejected_ip:   ["Лимит verify по IP", "refused"],
   send_rejected_locked: ["SMS не отправлено: номер заблокирован", "refused"],
@@ -203,7 +204,7 @@ const KINDS = {
   delivery_failed:      ["Сбой доставки", "fault"],
 };
 const REFUSED_SEND = ["send_rejected_locked", "send_rejected_rate", "send_rejected_ip"];
-const BLOCKED = ["verify_failed", "verify_rejected_ip", ...REFUSED_SEND]; // requests the defence turned away
+const BLOCKED = ["verify_failed", "verify_reused", "verify_rejected_ip", ...REFUSED_SEND]; // requests the defence turned away
 
 const num = new Intl.NumberFormat("ru-RU");
 const som = new Intl.NumberFormat("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
