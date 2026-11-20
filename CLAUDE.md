@@ -114,6 +114,7 @@ backend/
 | POST | `/otp/verify` | `{"msisdn": str, "code": str}` | 200 / 400 / 401 / 410 / 423 / 429 |
 | GET | `/events` | — | последние события безопасности (для дашборда) |
 | GET | `/stats` | — | `{"counts": {тип: N}, "saved_som": float}` — счётчики событий с запуска (in-memory, обнуляются при рестарте) и сумма `saved_som` отклонённых `send` |
+| GET | `/stats/history` | — | `{"bucket_seconds": 900, "buckets": [{"ts", "brute", "pumping"} × 96]}` — атаки за 24 ч по 15 мин из `security.log` (переживает рестарт); brute = `verify_failed` + `verify_rejected_ip`, pumping = `send_rejected_*` |
 
 Тело ответа — `{"detail": "<причина>"}`. Некорректный JSON или формат → **400**, не 422: стандартную ошибку валидации FastAPI переопределяем.
 

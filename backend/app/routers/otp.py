@@ -4,7 +4,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 
-from app import otp
+from app import history, otp
 
 router = APIRouter()
 
@@ -68,3 +68,8 @@ def events() -> list[dict]:
 @router.get("/stats")
 def stats() -> dict:
     return otp.stats()
+
+
+@router.get("/stats/history")
+def stats_history() -> dict:
+    return history.history()
