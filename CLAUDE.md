@@ -31,12 +31,12 @@
 - Время — только через одну функцию `now()` в `app/otp.py`; в тестах её подменяем, `sleep` на 120 с не пишем.
 - LLM не используем: в ТЗ 6 он не нужен, а ключа у жюри нет.
 - Дашборд (бонус) и `/demo` — статические `app/static/dashboard.html`, `app/static/demo.html` без сборки, его отдаёт FastAPI. React и Node не нужны.
-- Цвета UI — роли из официального Catppuccin style guide (github.com/catppuccin/catppuccin, `docs/style-guide.md`), hex — из `catppuccin/palette` (`palette.json`); по памяти не берём. Mocha — `/dashboard`, бот; Latte — `/demo`, слайды. Текст на фоне — не ниже 4,5:1 (WCAG AA), проверка — `npx impeccable detect <url>`. Overlay 1 («Subtle» в руководстве) на `base` Mocha даёт 4,4:1 — для текста не берём.
+- Цвета UI — роли из официального Catppuccin style guide (github.com/catppuccin/catppuccin, `docs/style-guide.md`), hex — из `catppuccin/palette` (`palette.json`); по памяти не берём. Mocha — `/dashboard`, бот; Latte — `/demo`, слайды. Текст на фоне — не ниже 4,5:1 (WCAG AA), проверка — `npx impeccable detect <url>`. Overlay 1 («Subtle» в руководстве) на `base` Mocha даёт 4,4:1 — для текста не берём. Subtext 0 на `base` Latte даёт 4,37:1 — подписи на Latte только в Subtext 1 (5,53:1).
 
   | Роль | Mocha | Latte |
   |---|---|---|
   | Основной текст (Text) | `#cdd6f4` | `#4c4f69` |
-  | Подписи, labels (Subtext 0 / 1) | `#a6adc8` / `#bac2de` | `#6c6f85` / `#5c5f77` |
+  | Подписи, labels (Subtext 0 / 1) | `#a6adc8` / `#bac2de` | `#6c6f85` (не для текста на `base`) / `#5c5f77` |
   | Текст на акценте (Base) | `#1e1e2e` | `#eff1f5` |
   | Фон: base / mantle / crust | `#1e1e2e` / `#181825` / `#11111b` | `#eff1f5` / `#e6e9ef` / `#dce0e8` |
   | Поверхности, рамки (Surface 0) | `#313244` | `#ccd0da` |
