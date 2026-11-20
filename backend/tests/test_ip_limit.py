@@ -62,7 +62,13 @@ def test_rejected_requests_do_not_extend_the_window(api, clock):
     assert api.verify("123456").status_code == 401
 
 
-def test_x_forwarded_for_is_ignored(api):
+def test_app_takes_ip_from_connection_not_header(api):
+    """The app itself reads only request.client.host.
+
+    Not covered here: uvicorn may rewrite client.host from X-Forwarded-For before the app
+    sees it (by default it trusts the header from 127.0.0.1). That is a server launch flag
+    (--proxy-headers / --forwarded-allow-ips), and TestClient does not go through uvicorn.
+    """
     for _ in range(20):
         api.verify("123456")
     r = api.client().post(
