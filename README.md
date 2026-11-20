@@ -9,10 +9,14 @@ Python 3.12+:
 ```
 cd backend
 pip install -r requirements.txt
-uvicorn app.main:app --workers 1
+uvicorn app.main:app --workers 1 --no-proxy-headers
 ```
 
 Swagger — http://localhost:8000/docs
+
+- Коды («SMS») — в `outbox/sms.jsonl` в корне репозитория (не в `backend/`), одна JSON-строка на выдачу: `{"ts": "...", "msisdn": "996770730000", "code": "012345"}`. Актуальный код номера — последняя строка для него. Другой путь — env `OTP_OUTBOX`.
+- IP клиента — адрес соединения. `X-Forwarded-For` не принимается (`--no-proxy-headers`): иначе uvicorn поверил бы ему с `127.0.0.1`, и перебор с подменой заголовка обошёл бы лимит 20 `verify` в минуту с одного IP.
+- Время — реальное, режима подмены часов в сервисе нет: `advance` в сценариях — обычное ожидание.
 
 ## Docker Compose + Redis (бонус)
 
