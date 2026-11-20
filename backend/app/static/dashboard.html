@@ -3,8 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="icon" href="data:,">
-<title>OTP Shield · события безопасности</title>
+<!-- OTP Shield mark from assets/logo-mocha.svg, inline: assets/ is not in the Docker image -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='64 32 384 448'%3E%3Cdefs%3E%3Cmask id='m'%3E%3Crect width='512' height='512' fill='%23fff'/%3E%3Ccircle cx='176' cy='224' r='32'/%3E%3Ccircle cx='176' cy='312' r='32'/%3E%3Ccircle cx='256' cy='224' r='32'/%3E%3Ccircle cx='256' cy='312' r='32'/%3E%3Ccircle cx='336' cy='224' r='32'/%3E%3Ccircle cx='336' cy='312' r='32'/%3E%3C/mask%3E%3C/defs%3E%3Cpath d='M256 48 L432 112 V240 C432 352 360 424 256 464 C152 424 80 352 80 240 V112 Z' fill='%23cba6f7' mask='url%28%23m%29'/%3E%3C/svg%3E">
+<title>OTP Shield</title>
 <style>
   /* Catppuccin Mocha */
   :root {
@@ -93,9 +94,11 @@
   .day { padding: 20px 24px 14px; margin-bottom: 28px; --brute: var(--red); --pump: var(--yellow); }
   .day-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap; }
   .day-head h2 { margin: 0; }
-  .legend { display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; color: var(--subtext0); }
-  .legend b { color: var(--text); font-weight: 600; }
-  .key { display: inline-flex; align-items: center; gap: 8px; }
+  .legend { display: flex; gap: 28px; flex-wrap: wrap; }
+  .key { display: flex; flex-direction: column; gap: 2px; }
+  .key .name { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--subtext0); }
+  .key b { font-size: 22px; font-weight: 650; color: var(--text); }
+  .day-foot { display: flex; justify-content: flex-end; color: var(--overlay0); font-size: 12px; margin-top: 2px; }
   .swatch { width: 10px; height: 10px; border-radius: 3px; }
   .swatch.brute, .seg.brute { background: var(--brute); fill: var(--brute); }
   .swatch.pump, .seg.pump { background: var(--pump); fill: var(--pump); }
@@ -157,13 +160,14 @@
     <div class="day-head">
       <h2>Атаки за 24 часа <span style="font-weight:400;color:var(--overlay0)">· по 15 минут</span></h2>
       <div class="legend">
-        <span class="key"><span class="swatch brute"></span>Перебор кода · <b id="d-brute">0</b></span>
-        <span class="key"><span class="swatch pump"></span>SMS pumping · <b id="d-pump">0</b></span>
-        <span id="d-peak"></span>
+        <div class="key"><span class="name"><span class="swatch brute"></span>Отбито перебора</span><b id="d-brute">0</b></div>
+        <div class="key"><span class="name"><span class="swatch pump"></span>Отклонено SMS (pumping)</span><b id="d-pump">0</b></div>
+        <div class="key"><span class="name">Сэкономлено, не меньше</span><b><span id="d-saved">0,00</span> сом</b></div>
       </div>
     </div>
     <svg id="day" viewBox="0 0 960 150" preserveAspectRatio="none" aria-label="Атаки за 24 часа по 15 минут"></svg>
     <div class="day-axis" id="day-axis"></div>
+    <div class="day-foot" id="d-peak"></div>
   </section>
 
   <section>
@@ -493,8 +497,10 @@ function renderDay(h) {
 
   const brute = b.reduce((s, x) => s + x.brute, 0);
   const pump = b.reduce((s, x) => s + x.pumping, 0);
+  const saved = b.reduce((s, x) => s + (x.saved_som || 0), 0);
   $("d-brute").textContent = num.format(brute);
   $("d-pump").textContent = num.format(pump);
+  $("d-saved").textContent = som.format(saved);
   $("d-peak").textContent = brute + pump ? `пик ${num.format(max)} за 15 мин` : "атак за сутки не было";
 }
 
