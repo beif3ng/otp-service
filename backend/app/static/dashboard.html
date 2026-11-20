@@ -88,6 +88,23 @@
     to { background: transparent; }
   }
   .empty { color: var(--overlay0); padding: 28px 16px; }
+
+  /* 24 h chart: stacked brute force + SMS pumping per 15 min */
+  .day { padding: 20px 24px 14px; margin-bottom: 28px; --brute: var(--red); --pump: var(--yellow); }
+  .day-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+  .day-head h2 { margin: 0; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; color: var(--subtext0); }
+  .legend b { color: var(--text); font-weight: 600; }
+  .key { display: inline-flex; align-items: center; gap: 8px; }
+  .swatch { width: 10px; height: 10px; border-radius: 3px; }
+  .swatch.brute, .seg.brute { background: var(--brute); fill: var(--brute); }
+  .swatch.pump, .seg.pump { background: var(--pump); fill: var(--pump); }
+  #day { display: block; width: 100%; height: 150px; margin-top: 14px; }
+  #day .hit { fill: transparent; }
+  #day .col:hover .hit { fill: var(--surface0); }
+  #day line { stroke: var(--surface1); stroke-width: 1; }
+  .day-axis { position: relative; height: 18px; margin-top: 4px; color: var(--overlay0); font-size: 12px; }
+  .day-axis span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
   footer { margin-top: 20px; color: var(--overlay0); font-size: 12px; }
   @media (max-width: 760px) { .hero { grid-template-columns: 1fr; } .hero .value { font-size: 44px; } }
   @media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important; } }
@@ -136,6 +153,19 @@
     </div>
   </section>
 
+  <section class="card day">
+    <div class="day-head">
+      <h2>Атаки за 24 часа <span style="font-weight:400;color:var(--overlay0)">· по 15 минут</span></h2>
+      <div class="legend">
+        <span class="key"><span class="swatch brute"></span>Перебор кода · <b id="d-brute">0</b></span>
+        <span class="key"><span class="swatch pump"></span>SMS pumping · <b id="d-pump">0</b></span>
+        <span id="d-peak"></span>
+      </div>
+    </div>
+    <svg id="day" viewBox="0 0 960 150" preserveAspectRatio="none" aria-label="Атаки за 24 часа по 15 минут"></svg>
+    <div class="day-axis" id="day-axis"></div>
+  </section>
+
   <section>
     <h2>Лента событий</h2>
     <div class="card feed">
@@ -146,7 +176,7 @@
     </div>
   </section>
 
-  <footer>Счётчики и график — с запуска сервиса. Одинаковые события подряд склеиваются в одну строку. Номера и IP частично скрыты, коды в журнал не пишутся.</footer>
+  <footer>Счётчики и график за 60 с — с запуска сервиса, график за 24 часа — из журнала безопасности. Одинаковые события подряд склеиваются в одну строку. Номера и IP частично скрыты, коды в журнал не пишутся.</footer>
 </main>
 
 <script>
@@ -421,8 +451,65 @@ async function poll() {
   }
 }
 
+// ---------- 24 h chart ----------
+const HISTORY_MS = 10000;
+const hhmm = (ts) => (ts ? ts.slice(11, 16) : "");
+
+function renderDay(h) {
+  const b = h.buckets;
+  const n = b.length, W = 960 / n, H = 150, GAP = 2;
+  const max = Math.max(1, ...b.map((x) => x.brute + x.pumping));
+  const ns = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs) => {
+    const node = document.createElementNS(ns, tag);
+    for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+    return node;
+  };
+  const scale = (v) => (v ? Math.max(2, (v / max) * (H - 6)) : 0);
+  const cols = b.map((x, i) => {
+    const g = el("g", { class: "col" });
+    const hb = scale(x.brute), hp = scale(x.pumping);
+    const title = document.createElementNS(ns, "title");
+    title.textContent = `${hhmm(x.ts)}–${b[i + 1] ? hhmm(b[i + 1].ts) : "сейчас"} · перебор ${num.format(x.brute)} · pumping ${num.format(x.pumping)}`;
+    g.append(el("rect", { class: "hit", x: i * W, y: 0, width: W, height: H }));
+    if (hb) g.append(el("rect", { class: "seg brute", x: i * W + 1, y: H - hb, width: W - 2, height: hb, rx: 2 }));
+    if (hp) g.append(el("rect", { class: "seg pump", x: i * W + 1, y: H - hb - hp - (hb ? GAP : 0), width: W - 2, height: hp, rx: 2 }));
+    g.append(title);
+    return g;
+  });
+  $("day").replaceChildren(el("line", { x1: 0, x2: 960, y1: H, y2: H }), ...cols);
+
+  const axis = [];
+  b.forEach((x, i) => {
+    const [hh, mm] = [Number(x.ts.slice(11, 13)), x.ts.slice(14, 16)];
+    if (mm === "00" && hh % 3 === 0) {
+      const s = document.createElement("span");
+      s.style.left = ((i / n) * 100).toFixed(2) + "%";
+      s.textContent = hhmm(x.ts);
+      axis.push(s);
+    }
+  });
+  $("day-axis").replaceChildren(...axis);
+
+  const brute = b.reduce((s, x) => s + x.brute, 0);
+  const pump = b.reduce((s, x) => s + x.pumping, 0);
+  $("d-brute").textContent = num.format(brute);
+  $("d-pump").textContent = num.format(pump);
+  $("d-peak").textContent = brute + pump ? `пик ${num.format(max)} за 15 мин` : "атак за сутки не было";
+}
+
+async function pollHistory() {
+  try {
+    renderDay(await get("/stats/history"));
+  } catch {
+    // the live status pill already reports a dead connection
+  }
+}
+
 poll();
 setInterval(poll, POLL_MS);
+pollHistory();
+setInterval(pollHistory, HISTORY_MS);
 </script>
 </body>
 </html>
