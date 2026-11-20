@@ -246,7 +246,8 @@ def _verify(msisdn: str, code: str, ip: str, n: Number, t: float) -> Result:
     if n.otp_hash is None:
         return Result(401, "no active code")
     if n.otp_used:
-        _event(t, "verify_reused", msisdn, ip)  # a spent code again: a replay, not a typo
+        if hmac.compare_digest(n.otp_hash, candidate):
+            _event(t, "verify_reused", msisdn, ip)  # the spent code again: a replay, not a typo
         return Result(401, "no active code")
     if t - n.otp_created >= config.OTP_TTL:
         return Result(410, "code expired")

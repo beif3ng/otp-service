@@ -50,6 +50,8 @@ def test_reused_code_is_journaled(api):
     code = api.code()
     assert api.verify(code).status_code == 200
     assert api.verify(code).status_code == 401
+    other = "000000" if code != "000000" else "000001"
+    assert api.verify(other).status_code == 401  # another code after login: not a replay
     assert api.verify("123456", msisdn="996770730001").status_code == 401  # never sent: not a replay
     events = api.client().get("/events").json()
     assert sum(e["type"] == "verify_reused" for e in events) == 1
