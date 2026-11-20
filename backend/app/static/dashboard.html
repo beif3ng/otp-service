@@ -23,7 +23,7 @@
   main { max-width: 1160px; margin: 0 auto; padding: 28px 24px 48px; }
   header { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
   h1 { margin: 0; font-size: 22px; font-weight: 600; }
-  h1 span { color: var(--overlay0); font-weight: 400; }
+  h1 span { color: var(--subtext0); font-weight: 400; }
   h2 { margin: 0 0 12px; font-size: 15px; font-weight: 600; color: var(--subtext0); }
   .card { border-radius: 14px; background: var(--mantle); border: 1px solid var(--surface0); transition: border-color .4s, box-shadow .4s; }
 
@@ -46,20 +46,20 @@
   .hero .label { color: var(--subtext0); }
   .hero .value { font-size: 56px; font-weight: 650; line-height: 1.1; margin: 6px 0; letter-spacing: -.5px; }
   .hero .value small { font-size: 24px; font-weight: 500; color: var(--subtext0); letter-spacing: 0; }
-  .hero .note { color: var(--overlay0); font-size: 13px; }
+  .hero .note { color: var(--subtext0); font-size: 13px; }
   .chart .label { color: var(--subtext0); font-size: 13px; display: flex; justify-content: space-between; gap: 12px; }
   .chart svg { display: block; width: 100%; height: 110px; margin-top: 8px; overflow: visible; }
   .chart rect.bar { fill: var(--red); transition: height .3s, y .3s; }
   .chart rect.hit { fill: transparent; }
   .chart rect.hit:hover + rect.bar, .chart rect.bar:hover { fill: #f5a3ba; }
   .chart line { stroke: var(--surface1); stroke-width: 1; }
-  .chart .axis { display: flex; justify-content: space-between; color: var(--overlay0); font-size: 12px; margin-top: 4px; }
+  .chart .axis { display: flex; justify-content: space-between; color: var(--subtext0); font-size: 12px; margin-top: 4px; }
 
   .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 28px; }
   .tile { padding: 16px 18px; }
   .tile .label { color: var(--subtext0); font-size: 13px; display: flex; align-items: center; gap: 8px; }
   .tile .value { font-size: 32px; font-weight: 650; margin-top: 4px; }
-  .tile .note { color: var(--overlay0); font-size: 12px; }
+  .tile .note { color: var(--subtext0); font-size: 12px; }
   .flash { animation: flash .9s ease-out; }
   @keyframes flash { from { border-color: var(--tone, var(--surface1)); box-shadow: 0 0 22px -4px var(--tone, transparent); } }
 
@@ -71,13 +71,13 @@
   table { width: 100%; border-collapse: collapse; }
   th, td { text-align: left; padding: 9px 16px; border-bottom: 1px solid var(--surface0); }
   tbody tr:last-child td { border-bottom: 0; }
-  th { color: var(--overlay0); font-weight: 500; font-size: 13px; }
+  th { color: var(--subtext0); font-weight: 500; font-size: 13px; }
   td.time, td.who { color: var(--subtext0); white-space: nowrap; }
   td.detail { color: var(--subtext0); white-space: nowrap; }
   .kind { display: inline-flex; align-items: center; gap: 8px; }
   .count {
     display: inline-block; min-width: 2.2em; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600;
-    text-align: center; color: var(--crust); background: var(--tone, var(--overlay0));
+    text-align: center; color: var(--base); background: var(--tone, var(--overlay0));
   }
   .count[hidden] { display: none; }
   .bump { animation: bump .35s ease-out; }
@@ -88,7 +88,7 @@
     60% { opacity: 1; transform: none; }
     to { background: transparent; }
   }
-  .empty { color: var(--overlay0); padding: 28px 16px; }
+  .empty { color: var(--subtext0); padding: 28px 16px; }
 
   /* 24 h chart: stacked brute force + SMS pumping per 15 min */
   .day { padding: 20px 24px 14px; margin-bottom: 28px; --brute: var(--red); --pump: var(--yellow); }
@@ -98,7 +98,7 @@
   .key { display: flex; flex-direction: column; gap: 2px; }
   .key .name { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--subtext0); }
   .key b { font-size: 22px; font-weight: 650; color: var(--text); }
-  .day-foot { display: flex; justify-content: flex-end; color: var(--overlay0); font-size: 12px; margin-top: 2px; }
+  .day-foot { display: flex; justify-content: flex-end; color: var(--subtext0); font-size: 12px; margin-top: 2px; }
   .swatch { width: 10px; height: 10px; border-radius: 3px; }
   .swatch.brute, .seg.brute { background: var(--brute); fill: var(--brute); }
   .swatch.pump, .seg.pump { background: var(--pump); fill: var(--pump); }
@@ -106,9 +106,9 @@
   #day .hit { fill: transparent; }
   #day .col:hover .hit { fill: var(--surface0); }
   #day line { stroke: var(--surface1); stroke-width: 1; }
-  .day-axis { position: relative; height: 18px; margin-top: 4px; color: var(--overlay0); font-size: 12px; }
+  .day-axis { position: relative; height: 18px; margin-top: 4px; color: var(--subtext0); font-size: 12px; }
   .day-axis span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
-  footer { margin-top: 20px; color: var(--overlay0); font-size: 12px; }
+  footer { margin-top: 20px; color: var(--subtext0); font-size: 12px; }
   @media (max-width: 760px) { .hero { grid-template-columns: 1fr; } .hero .value { font-size: 44px; } }
   @media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important; } }
 </style>
@@ -158,7 +158,7 @@
 
   <section class="card day">
     <div class="day-head">
-      <h2>Атаки за 24 часа <span style="font-weight:400;color:var(--overlay0)">· по 15 минут</span></h2>
+      <h2>Атаки за 24 часа <span style="font-weight:400;color: var(--subtext0)">· по 15 минут</span></h2>
       <div class="legend">
         <div class="key"><span class="name"><span class="swatch brute"></span>Отбито перебора</span><b id="d-brute">0</b></div>
         <div class="key"><span class="name"><span class="swatch pump"></span>Отклонено SMS (pumping)</span><b id="d-pump">0</b></div>
