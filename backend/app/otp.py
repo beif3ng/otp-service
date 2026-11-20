@@ -48,7 +48,8 @@ _store = store.connect(config.REDIS_URL, lambda: now())  # lambda: tests replace
 _numbers = getattr(_store, "numbers", None)  # in-memory mode only: lets tests inspect storage
 _events: deque[dict] = deque(maxlen=config.EVENTS_KEEP)
 # A number key outlives every time-based state in it: send window, code TTL, lock.
-NUMBER_TTL = max(config.SEND_WINDOW, config.OTP_TTL, config.LOCK_SECONDS)
+# At least a day, so an expired code still answers 410 long after its TTL.
+NUMBER_TTL = max(config.SEND_WINDOW, config.OTP_TTL, config.LOCK_SECONDS, 86400)
 
 
 def reset() -> None:
