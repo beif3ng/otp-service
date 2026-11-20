@@ -37,9 +37,9 @@ IP_MAX = int(_num("IP_MAX", 20))  # the 21st verify -> 429
 SEND_IP_MAX = int(_num("SEND_IP_MAX", 0))
 SEND_IP_WINDOW = _num("SEND_IP_WINDOW", 600)
 
-# Cost of one SMS for "saved N som" on the dashboard: Beeline KG transactional,
-# "Старт" tier, VAT incl. (smspro.nikita.kg price list from 2026-08-01).
-SMS_PRICE_SOM = _num("SMS_PRICE_SOM", 1.76)
+# Cost of one SMS for "saved at least N som" on the dashboard: the lowest official
+# Beeline KG SMS price (beeline.kg retail tariffs). Business A2P traffic costs more.
+SMS_PRICE_SOM = _num("SMS_PRICE_SOM", 1.04)
 
 OTP_SECRET = (
     os.environ["OTP_SECRET"].encode() if os.environ.get("OTP_SECRET") else secrets.token_bytes(32)
