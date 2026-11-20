@@ -104,6 +104,8 @@ Windows (PowerShell): то же, но `python -m venv .venv; .venv\Scripts\Activ
 [pump] from 127.0.0.1
   send   responses: 200x50  429x950   (0.8 s)
   SMS sent: 50 of 1000, rejected: 950, saved at least 988.00 som
+  ATTACK STOPPED: send delays and the 3-per-10-min window reject repeats (429)
+ALL ATTACKS STOPPED
 ```
 
 Перебор одного номера останавливает блокировка после 5 ошибок, распределённый — лимит 20 `verify` в минуту с IP: из 1000 догадок с кодом сравнивается не больше 5 и 20.
@@ -154,3 +156,9 @@ IP-лимит в compose общий для всех локальных клие�
 - [x] Дашборд событий `/dashboard`: «сэкономлено N сом», отбито перебора, лента с частично скрытыми номерами
 - [ ] Демо-вход `/demo` — в работе
 - [x] Лимит `send` по IP против SMS pumping (`SEND_IP_MAX`), «сэкономлено N сом» (`/stats`)
+
+## Не успели / вне рамок
+
+- Реальная отправка SMS: вместо SMSC оператора (SMPP) — файл `outbox/sms.jsonl`; остальная логика та же.
+- Режим подмены часов для проверки: время в сервисе реальное, ускорить сценарии можно через env (см. «Настройки»).
+- Лимит по IP в Docker Compose различает клиентов только при запуске без docker-proxy (см. «Docker Compose»).
