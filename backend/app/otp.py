@@ -55,6 +55,7 @@ class Number:
 _lock = threading.Lock()
 _numbers: dict[str, Number] = {}
 _ip_hits: dict[str, deque[float]] = {}
+_ip_sends: dict[str, deque[float]] = {}
 _events: deque[dict] = deque(maxlen=config.EVENTS_KEEP)
 
 
@@ -63,6 +64,7 @@ def reset() -> None:
     with _lock:
         _numbers.clear()
         _ip_hits.clear()
+        _ip_sends.clear()
         _events.clear()
 
 
@@ -130,6 +132,23 @@ def _next_send_at(n: Number) -> float:
     return at
 
 
+def _ip_send_retry(ip: str | None, t: float) -> float | None:
+    """Seconds until the IP may send again, None if allowed or the limit is off."""
+    if not config.SEND_IP_MAX or ip is None:
+        return None
+    sends = _ip_sends.setdefault(ip, deque())
+    while sends and sends[0] <= t - config.SEND_IP_WINDOW:
+        sends.popleft()
+    if len(sends) < config.SEND_IP_MAX:
+        return None
+    return sends[0] + config.SEND_IP_WINDOW - t
+
+
+def _rejected_send(t: float, kind: str, msisdn: str, ip: str | None) -> None:
+    """A refused send is an SMS the business did not pay for."""
+    _event(t, kind, msisdn, ip, saved_som=config.SMS_PRICE_SOM)
+
+
 def send(msisdn: object, ip: str | None) -> Result:
     t = now()
     if not _valid_msisdn(msisdn):
@@ -137,16 +156,22 @@ def send(msisdn: object, ip: str | None) -> Result:
     with _lock:
         n = _number(msisdn, t)
         if _locked(n, t):
-            _event(t, "send_rejected_locked", msisdn, ip)
+            _rejected_send(t, "send_rejected_locked", msisdn, ip)
             return Result(423, "number is locked", n.locked_until - t)
         if n.sends:
             at = _next_send_at(n)
             if t < at:
-                _event(t, "send_rejected_rate", msisdn, ip)
+                _rejected_send(t, "send_rejected_rate", msisdn, ip)
                 return Result(429, "too many requests", at - t)
+        retry = _ip_send_retry(ip, t)
+        if retry is not None:
+            _rejected_send(t, "send_rejected_ip", msisdn, ip)
+            return Result(429, "too many requests from this ip", retry)
         code = f"{secrets.randbelow(10**6):06d}"
         n.otp_hash, n.otp_created, n.otp_used = _hash(msisdn, code), t, False
         n.sends.append((t, len(n.sends) + 1))
+        if config.SEND_IP_MAX and ip is not None:
+            _ip_sends[ip].append(t)
         _deliver(t, msisdn, code)
         _event(t, "otp_sent", msisdn, ip)
     return Result(200, "sent")
