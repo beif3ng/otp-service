@@ -76,7 +76,7 @@ backend/
 | Docker (бонус) | корень | `docker compose up --build` |
 | Деплой (демо) | — | push в `main` → https://otp.beifeng.dev; на VM: `~/otp-service`, `docker compose -f compose.yaml -f compose.prod.yaml up -d --build` |
 | Слайды | `../hackathon/pitch/` (старый репо `beif3ng/hackathon`, не этот) | правим текст в `build.js`, `npm run build` → `pitch.pptx` → импорт в Google Slides |
-| Проверка дашборда агентом | любая | `agent-browser open http://localhost:8000/dashboard`, затем `snapshot`, `errors`, `close` |
+| Проверка дашборда агентом | любая | `agent-browser open http://localhost:8000/dashboard`, затем `snapshot`, `errors`, `close`. Установка один раз (нужен Node): `npm install -g agent-browser`, `agent-browser install` (скачивает Chrome for Testing) |
 
 ## Правила
 - Работай в зоне своего человека. Нужно изменить чужую зону → скажи об этом, не меняй молча.
