@@ -9,12 +9,21 @@ from app import history, otp
 router = APIRouter()
 
 
+MAX_BODY = 4096  # a valid body is under 100 bytes; a huge one would stall the event loop
+
+
 async def json_body(request: Request) -> Any:
     """Parse the body ourselves: bad JSON must give 400 and, for verify, still
-    pass the IP limit first. Returns None for a body that is not JSON.
+    pass the IP limit first. Returns None for a body that is not JSON or is
+    over MAX_BODY (read no further than that).
     RecursionError: a deeply nested body like [[[...]]] is bad input, not a 500."""
+    body = bytearray()
+    async for chunk in request.stream():
+        body += chunk
+        if len(body) > MAX_BODY:
+            return None
     try:
-        return json.loads(await request.body())
+        return json.loads(body)
     except (ValueError, UnicodeDecodeError, RecursionError):
         return None
 

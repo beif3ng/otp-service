@@ -22,6 +22,16 @@ def test_deeply_nested_json_counts_in_ip_limit(api):
     assert c.post("/otp/verify", content=DEEP_JSON).status_code == 429
 
 
+def test_huge_body_is_400_and_counts_in_ip_limit(api):
+    """A body over MAX_BODY is not parsed: 400, and verify still counts in the IP limit."""
+    c = api.client()
+    huge = b'{"msisdn": "' + b"9" * 10**6 + b'"}'
+    assert c.post("/otp/send", content=huge).status_code == 400
+    for _ in range(config.IP_MAX):
+        assert c.post("/otp/verify", content=huge).status_code == 400
+    assert c.post("/otp/verify", content=huge).status_code == 429
+
+
 def test_ip_rejection_does_not_journal_junk_msisdn(api):
     for _ in range(config.IP_MAX):
         api.verify("000000")
