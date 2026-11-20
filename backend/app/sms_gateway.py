@@ -96,7 +96,8 @@ def handle(bot: Bot, bindings: Bindings, message: dict) -> None:
     contact = message.get("contact")
     text = message.get("text", "")
     if contact:
-        if contact.get("user_id") != message.get("from", {}).get("id"):
+        owner = contact.get("user_id")
+        if owner is None or owner != message.get("from", {}).get("id"):
             bot.say(chat_id, "Можно привязать только свой номер: нажмите кнопку ниже.", reply_markup=SHARE_BUTTON)
             return
         msisdn = normalize(contact.get("phone_number", ""))
