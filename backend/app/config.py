@@ -1,5 +1,6 @@
 """Timings and limits from env; defaults match the spec (ТЗ 6 + clarifications v1.1)."""
 
+import math
 import os
 import secrets
 from pathlib import Path
@@ -11,14 +12,31 @@ load_dotenv()
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
-def _num(name: str, default: float) -> float:
-    return float(os.environ.get(name, default))
+def _num(name: str, default: float, minimum: float = 0) -> float:
+    """A number from env; a bad value stops the start with a clear message."""
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    try:
+        value = float(raw)
+    except ValueError:
+        raise SystemExit(f"env {name}={raw!r}: expected a number") from None
+    if not math.isfinite(value) or value < minimum:
+        raise SystemExit(f"env {name}={raw!r}: expected a number >= {minimum:g}")
+    return value
+
+
+def _int(name: str, default: int, minimum: int) -> int:
+    value = _num(name, default, minimum)
+    if value != int(value):
+        raise SystemExit(f"env {name}={os.environ[name]!r}: expected a whole number")
+    return int(value)
 
 
 OTP_TTL = _num("OTP_TTL", 120)  # code lifetime, s; elapsed >= TTL -> 410
 
 SEND_WINDOW = _num("SEND_WINDOW", 600)  # window (t - 600, t] for send count
-SEND_MAX = int(_num("SEND_MAX", 3))  # successful sends per window
+SEND_MAX = _int("SEND_MAX", 3, minimum=1)  # successful sends per window
 # Delay after the 1st, 2nd and 3rd send in the window.
 SEND_DELAYS = (
     _num("SEND_DELAY_1", 30),
@@ -26,20 +44,24 @@ SEND_DELAYS = (
     _num("SEND_DELAY_3", 120),
 )
 
-VERIFY_MAX_FAILS = int(_num("VERIFY_MAX_FAILS", 5))  # the 5th wrong code -> 423
+VERIFY_MAX_FAILS = _int("VERIFY_MAX_FAILS", 5, minimum=1)  # the 5th wrong code -> 423
 LOCK_SECONDS = _num("LOCK_SECONDS", 900)  # lock [t, t + 900)
 
 IP_WINDOW = _num("IP_WINDOW", 60)  # window (t - 60, t] for verify per IP
-IP_MAX = int(_num("IP_MAX", 20))  # the 21st verify -> 429
+IP_MAX = _int("IP_MAX", 20, minimum=1)  # the 21st verify -> 429
 
 # Anti SMS pumping: successful sends per IP in the window. 0 = off (default):
 # hidden jury scenarios may send to many numbers from one IP.
-SEND_IP_MAX = int(_num("SEND_IP_MAX", 0))
+SEND_IP_MAX = _int("SEND_IP_MAX", 0, minimum=0)
 SEND_IP_WINDOW = _num("SEND_IP_WINDOW", 600)
 
 # Cost of one SMS for "saved at least N som" on the dashboard: the lowest official
 # Beeline KG SMS price (beeline.kg retail tariffs). Business A2P traffic costs more.
 SMS_PRICE_SOM = _num("SMS_PRICE_SOM", 1.04)
+
+# Bonus: Redis storage with TTL. Unset -> in-memory.
+REDIS_URL = os.environ.get("REDIS_URL") or None
+
 
 def _otp_secret() -> bytes:
     """HMAC key: env OTP_SECRET, else a key file created once (Docker volume, so
@@ -49,6 +71,10 @@ def _otp_secret() -> bytes:
         return os.environ["OTP_SECRET"].encode()
     path = os.environ.get("OTP_SECRET_FILE")
     if not path:
+        if REDIS_URL:
+            # Redis keeps HMACs across restarts; a new random key would turn every
+            # valid code into a wrong one (+1 fail) and could lock honest users.
+            raise SystemExit("REDIS_URL needs a stable HMAC key: set OTP_SECRET or OTP_SECRET_FILE")
         return secrets.token_bytes(32)
     key_file = Path(path)
     if not key_file.exists():
@@ -58,9 +84,6 @@ def _otp_secret() -> bytes:
 
 
 OTP_SECRET = _otp_secret()
-
-# Bonus: Redis storage with TTL. Unset -> in-memory.
-REDIS_URL = os.environ.get("REDIS_URL") or None
 
 DEFAULT_OUTBOX = REPO_ROOT / "outbox" / "sms.jsonl"
 SECURITY_LOG = Path(os.environ.get("SECURITY_LOG") or REPO_ROOT / "security.log")

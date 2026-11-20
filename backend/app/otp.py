@@ -44,7 +44,7 @@ class Result:
 
 
 _lock = threading.Lock()
-_store = store.connect(config.REDIS_URL)
+_store = store.connect(config.REDIS_URL, lambda: now())  # lambda: tests replace now()
 _numbers = getattr(_store, "numbers", None)  # in-memory mode only: lets tests inspect storage
 _events: deque[dict] = deque(maxlen=config.EVENTS_KEEP)
 # A number key outlives every time-based state in it: send window, code TTL, lock.
@@ -171,6 +171,13 @@ def _send(msisdn: str, ip: str | None, n: Number, t: float) -> Result:
         _rejected_send(t, "send_rejected_ip", msisdn, ip)
         return Result(429, "too many requests from this ip", retry)
     code = f"{secrets.randbelow(10**6):06d}"
+    # Deliver first: if the SMS channel fails, the old code and the send count stay
+    # as they were, and the user may retry at once instead of waiting for a 429.
+    try:
+        _deliver(t, msisdn, code)
+    except OSError:
+        _event(t, "delivery_failed", msisdn, ip)
+        return Result(503, "sms delivery failed")
     n.otp_hash, n.otp_created, n.otp_used = _hash(msisdn, code), t, False
     n.sends.append((t, len(n.sends) + 1))
     if config.SEND_IP_MAX and ip is not None:
@@ -178,7 +185,6 @@ def _send(msisdn: str, ip: str | None, n: Number, t: float) -> Result:
         sends = _store.timestamps(key)
         sends.append(t)
         _store.save_timestamps(key, sends, config.SEND_IP_WINDOW)
-    _deliver(t, msisdn, code)
     _event(t, "otp_sent", msisdn, ip)
     return Result(200, "sent")
 
@@ -200,7 +206,8 @@ def verify(msisdn: object, code: object, ip: str) -> Result:
     t = now()
     with _lock:
         if not _ip_allowed(ip, t):
-            _event(t, "verify_rejected_ip", msisdn if isinstance(msisdn, str) else None, ip)
+            # Only a valid msisdn goes to the journal: attacker strings of any size must not.
+            _event(t, "verify_rejected_ip", msisdn if _valid_msisdn(msisdn) else None, ip)
             return Result(429, "too many requests from this ip")
         if not _valid_msisdn(msisdn) or not _valid_code(code):
             return Result(400, "invalid msisdn or code")
@@ -213,13 +220,16 @@ def verify(msisdn: object, code: object, ip: str) -> Result:
 
 def _verify(msisdn: str, code: str, ip: str, n: Number, t: float) -> Result:
     """Caller holds _lock and saves n."""
+    # Hash on every path: equal work whether or not the number has a code, so the
+    # response time does not reveal an active OTP.
+    candidate = _hash(msisdn, code)
     if _locked(n, t):
         return Result(423, "number is locked")
     if n.otp_hash is None or n.otp_used:
         return Result(401, "no active code")
     if t - n.otp_created >= config.OTP_TTL:
         return Result(410, "code expired")
-    if hmac.compare_digest(n.otp_hash, _hash(msisdn, code)):
+    if hmac.compare_digest(n.otp_hash, candidate):
         n.otp_used, n.fails = True, 0
         _event(t, "verify_ok", msisdn, ip)
         return Result(200, "verified")

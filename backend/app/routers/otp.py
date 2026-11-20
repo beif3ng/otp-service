@@ -11,10 +11,11 @@ router = APIRouter()
 
 async def json_body(request: Request) -> Any:
     """Parse the body ourselves: bad JSON must give 400 and, for verify, still
-    pass the IP limit first. Returns None for a body that is not JSON."""
+    pass the IP limit first. Returns None for a body that is not JSON.
+    RecursionError: a deeply nested body like [[[...]]] is bad input, not a 500."""
     try:
         return json.loads(await request.body())
-    except (ValueError, UnicodeDecodeError):
+    except (ValueError, UnicodeDecodeError, RecursionError):
         return None
 
 
