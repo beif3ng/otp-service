@@ -44,6 +44,17 @@ def test_events_record_security_actions(api, clock):
     assert {"otp_sent", "verify_failed", "number_locked", "send_rejected_locked", "verify_rejected_ip"} <= types
 
 
+def test_reused_code_is_journaled(api):
+    """A spent code sent again is a replay: 401 as before, and the dashboard sees it."""
+    api.send()
+    code = api.code()
+    assert api.verify(code).status_code == 200
+    assert api.verify(code).status_code == 401
+    assert api.verify("123456", msisdn="996770730001").status_code == 401  # never sent: not a replay
+    events = api.client().get("/events").json()
+    assert sum(e["type"] == "verify_reused" for e in events) == 1
+
+
 def test_no_public_way_to_read_code(api):
     paths = set(api.client().get("/openapi.json").json()["paths"])
     # /stats/history returns only counts per 15 minutes
