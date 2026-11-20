@@ -196,7 +196,8 @@ def _send(msisdn: str, ip: str, n: Number, t: float) -> Result:
         _event(t, "delivery_failed", msisdn, ip)
         return Result(503, "sms delivery failed")
     n.otp_hash, n.otp_created, n.otp_used = _hash(msisdn, code), t, False
-    n.sends.append((t, len(n.sends) + 1))
+    # The step only goes up while the window has sends; it resets once the window is empty.
+    n.sends.append((t, n.sends[-1][1] + 1 if n.sends else 1))
     if config.SEND_IP_MAX:
         key = "ipsend:" + ip
         sends = _store.timestamps(key)

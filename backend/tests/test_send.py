@@ -83,6 +83,22 @@ def test_step_resets_after_window_empties(api, clock):
     assert api.send().status_code == 200  # back to the 30 s step
 
 
+def test_step_holds_while_window_has_sends(api, clock):
+    api.send()
+    clock.advance(30)
+    api.send()
+    clock.advance(560)
+    api.send()  # sends at 0, 30, 590
+    clock.advance(119.999)  # 709.999: only the 3rd send is in the window, its 120 s step holds
+    assert api.send().status_code == 429
+    clock.advance(0.001)
+    assert api.send().status_code == 200  # 4th at 710
+    clock.advance(119.999)
+    assert api.send().status_code == 429  # the step stays at 120 s, it does not fall back to 60 s
+    clock.advance(0.001)
+    assert api.send().status_code == 200  # 5th at 830
+
+
 def test_new_send_cancels_previous_code(api, clock, codes):
     codes(111111, 222222)
     api.send()
