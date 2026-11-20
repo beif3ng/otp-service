@@ -92,7 +92,9 @@ class RedisStore:
     def __init__(self, url: str) -> None:
         import redis  # only needed for the bonus
 
-        self._r = redis.Redis.from_url(url)
+        # Calls run under otp._lock: without a timeout a stalled Redis hangs the whole API
+        # instead of answering 503 (TimeoutError is a RedisError).
+        self._r = redis.Redis.from_url(url, socket_timeout=1, socket_connect_timeout=1)
         self._errors = redis.RedisError
         self._r.ping()  # fail at startup, not on the first request
 
