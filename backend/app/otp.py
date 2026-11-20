@@ -14,10 +14,11 @@ import secrets
 import threading
 import time
 from collections import deque
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
-from app import config
+from app import config, store
+from app.store import Number
 
 MSISDN_RE = re.compile(r"996[0-9]{9}")
 CODE_RE = re.compile(r"[0-9]{6}")
@@ -42,29 +43,18 @@ class Result:
         return {"Retry-After": str(max(1, math.ceil(self.retry_after)))}
 
 
-@dataclass
-class Number:
-    otp_hash: bytes | None = None
-    otp_created: float = 0.0
-    otp_used: bool = False
-    fails: int = 0  # wrong codes; bound to the number, not to the OTP
-    locked_until: float | None = None
-    sends: list[tuple[float, int]] = field(default_factory=list)  # (time, ordinal in window)
-
-
 _lock = threading.Lock()
-_numbers: dict[str, Number] = {}
-_ip_hits: dict[str, deque[float]] = {}
-_ip_sends: dict[str, deque[float]] = {}
+_store = store.connect(config.REDIS_URL)
+_numbers = getattr(_store, "numbers", None)  # in-memory mode only: lets tests inspect storage
 _events: deque[dict] = deque(maxlen=config.EVENTS_KEEP)
+# A number key outlives every time-based state in it: send window, code TTL, lock.
+NUMBER_TTL = max(config.SEND_WINDOW, config.OTP_TTL, config.LOCK_SECONDS)
 
 
 def reset() -> None:
     """Clear all state. For tests."""
     with _lock:
-        _numbers.clear()
-        _ip_hits.clear()
-        _ip_sends.clear()
+        _store.clear()
         _events.clear()
 
 
@@ -110,13 +100,18 @@ def _deliver(t: float, msisdn: str, code: str) -> None:
 
 
 def _number(msisdn: str, t: float) -> Number:
-    """State of the number with expired lock and old sends cleaned up."""
-    n = _numbers.setdefault(msisdn, Number())
+    """State of the number with expired lock and old sends cleaned up.
+    Caller holds _lock and saves it back with _save()."""
+    n = _store.number(msisdn)
     if n.locked_until is not None and t >= n.locked_until:
         n.locked_until = None
         n.fails = 0
     n.sends = [s for s in n.sends if s[0] > t - config.SEND_WINDOW]
     return n
+
+
+def _save(msisdn: str, n: Number) -> None:
+    _store.save_number(msisdn, n, NUMBER_TTL)
 
 
 def _locked(n: Number, t: float) -> bool:
@@ -136,7 +131,7 @@ def _ip_send_retry(ip: str | None, t: float) -> float | None:
     """Seconds until the IP may send again, None if allowed or the limit is off."""
     if not config.SEND_IP_MAX or ip is None:
         return None
-    sends = _ip_sends.setdefault(ip, deque())
+    sends = _store.timestamps("ipsend:" + ip)
     while sends and sends[0] <= t - config.SEND_IP_WINDOW:
         sends.popleft()
     if len(sends) < config.SEND_IP_MAX:
@@ -155,36 +150,49 @@ def send(msisdn: object, ip: str | None) -> Result:
         return Result(400, "invalid msisdn")
     with _lock:
         n = _number(msisdn, t)
-        if _locked(n, t):
-            _rejected_send(t, "send_rejected_locked", msisdn, ip)
-            return Result(423, "number is locked", n.locked_until - t)
-        if n.sends:
-            at = _next_send_at(n)
-            if t < at:
-                _rejected_send(t, "send_rejected_rate", msisdn, ip)
-                return Result(429, "too many requests", at - t)
-        retry = _ip_send_retry(ip, t)
-        if retry is not None:
-            _rejected_send(t, "send_rejected_ip", msisdn, ip)
-            return Result(429, "too many requests from this ip", retry)
-        code = f"{secrets.randbelow(10**6):06d}"
-        n.otp_hash, n.otp_created, n.otp_used = _hash(msisdn, code), t, False
-        n.sends.append((t, len(n.sends) + 1))
-        if config.SEND_IP_MAX and ip is not None:
-            _ip_sends[ip].append(t)
-        _deliver(t, msisdn, code)
-        _event(t, "otp_sent", msisdn, ip)
+        try:
+            return _send(msisdn, ip, n, t)
+        finally:
+            _save(msisdn, n)
+
+
+def _send(msisdn: str, ip: str | None, n: Number, t: float) -> Result:
+    """Caller holds _lock and saves n."""
+    if _locked(n, t):
+        _rejected_send(t, "send_rejected_locked", msisdn, ip)
+        return Result(423, "number is locked", n.locked_until - t)
+    if n.sends:
+        at = _next_send_at(n)
+        if t < at:
+            _rejected_send(t, "send_rejected_rate", msisdn, ip)
+            return Result(429, "too many requests", at - t)
+    retry = _ip_send_retry(ip, t)
+    if retry is not None:
+        _rejected_send(t, "send_rejected_ip", msisdn, ip)
+        return Result(429, "too many requests from this ip", retry)
+    code = f"{secrets.randbelow(10**6):06d}"
+    n.otp_hash, n.otp_created, n.otp_used = _hash(msisdn, code), t, False
+    n.sends.append((t, len(n.sends) + 1))
+    if config.SEND_IP_MAX and ip is not None:
+        key = "ipsend:" + ip
+        sends = _store.timestamps(key)
+        sends.append(t)
+        _store.save_timestamps(key, sends, config.SEND_IP_WINDOW)
+    _deliver(t, msisdn, code)
+    _event(t, "otp_sent", msisdn, ip)
     return Result(200, "sent")
 
 
 def _ip_allowed(ip: str, t: float) -> bool:
     """Count every verify from the IP; rejected ones (429) are not counted."""
-    hits = _ip_hits.setdefault(ip, deque())
+    key = "ip:" + ip
+    hits = _store.timestamps(key)
     while hits and hits[0] <= t - config.IP_WINDOW:
         hits.popleft()
     if len(hits) >= config.IP_MAX:
         return False
     hits.append(t)
+    _store.save_timestamps(key, hits, config.IP_WINDOW)
     return True
 
 
@@ -197,20 +205,28 @@ def verify(msisdn: object, code: object, ip: str) -> Result:
         if not _valid_msisdn(msisdn) or not _valid_code(code):
             return Result(400, "invalid msisdn or code")
         n = _number(msisdn, t)
-        if _locked(n, t):
-            return Result(423, "number is locked")
-        if n.otp_hash is None or n.otp_used:
-            return Result(401, "no active code")
-        if t - n.otp_created >= config.OTP_TTL:
-            return Result(410, "code expired")
-        if hmac.compare_digest(n.otp_hash, _hash(msisdn, code)):
-            n.otp_used, n.fails = True, 0
-            _event(t, "verify_ok", msisdn, ip)
-            return Result(200, "verified")
-        n.fails += 1
-        _event(t, "verify_failed", msisdn, ip, fails=n.fails)
-        if n.fails >= config.VERIFY_MAX_FAILS:
-            n.locked_until, n.otp_hash = t + config.LOCK_SECONDS, None
-            _event(t, "number_locked", msisdn, ip, until=_iso(n.locked_until))
-            return Result(423, "number is locked")
-        return Result(401, "invalid code")
+        try:
+            return _verify(msisdn, code, ip, n, t)
+        finally:
+            _save(msisdn, n)
+
+
+def _verify(msisdn: str, code: str, ip: str, n: Number, t: float) -> Result:
+    """Caller holds _lock and saves n."""
+    if _locked(n, t):
+        return Result(423, "number is locked")
+    if n.otp_hash is None or n.otp_used:
+        return Result(401, "no active code")
+    if t - n.otp_created >= config.OTP_TTL:
+        return Result(410, "code expired")
+    if hmac.compare_digest(n.otp_hash, _hash(msisdn, code)):
+        n.otp_used, n.fails = True, 0
+        _event(t, "verify_ok", msisdn, ip)
+        return Result(200, "verified")
+    n.fails += 1
+    _event(t, "verify_failed", msisdn, ip, fails=n.fails)
+    if n.fails >= config.VERIFY_MAX_FAILS:
+        n.locked_until, n.otp_hash = t + config.LOCK_SECONDS, None
+        _event(t, "number_locked", msisdn, ip, until=_iso(n.locked_until))
+        return Result(423, "number is locked")
+    return Result(401, "invalid code")

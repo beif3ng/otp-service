@@ -44,6 +44,8 @@ python-dotenv==1.2.4
     #   uvicorn
 pyyaml==6.0.3
     # via uvicorn
+redis==8.1.0
+    # via otp-service
 starlette==1.10.0
     # via fastapi
 typing-extensions==4.16.0

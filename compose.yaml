@@ -1,0 +1,28 @@
+# Bonus: backend + Redis with TTL. Run from the repo root: docker compose up --build
+services:
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      retries: 10
+
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      # HMAC key is created once in its own volume, not in Redis and not in git.
+      OTP_SECRET_FILE: /secret/otp_secret
+      OTP_OUTBOX: /outbox/sms.jsonl
+      SECURITY_LOG: /outbox/security.log
+    volumes:
+      - ./outbox:/outbox  # jury reads outbox/sms.jsonl in the repo root
+      - otp-secret:/secret
+    depends_on:
+      redis:
+        condition: service_healthy
+
+volumes:
+  otp-secret:

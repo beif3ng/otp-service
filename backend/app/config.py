@@ -41,9 +41,26 @@ SEND_IP_WINDOW = _num("SEND_IP_WINDOW", 600)
 # Beeline KG SMS price (beeline.kg retail tariffs). Business A2P traffic costs more.
 SMS_PRICE_SOM = _num("SMS_PRICE_SOM", 1.04)
 
-OTP_SECRET = (
-    os.environ["OTP_SECRET"].encode() if os.environ.get("OTP_SECRET") else secrets.token_bytes(32)
-)
+def _otp_secret() -> bytes:
+    """HMAC key: env OTP_SECRET, else a key file created once (Docker volume, so
+    stored HMACs survive a restart), else random per start. Never kept in Redis:
+    a Redis dump with the key would let anyone brute-force 10^6 codes offline."""
+    if os.environ.get("OTP_SECRET"):
+        return os.environ["OTP_SECRET"].encode()
+    path = os.environ.get("OTP_SECRET_FILE")
+    if not path:
+        return secrets.token_bytes(32)
+    key_file = Path(path)
+    if not key_file.exists():
+        key_file.parent.mkdir(parents=True, exist_ok=True)
+        key_file.write_bytes(secrets.token_bytes(32))
+    return key_file.read_bytes()
+
+
+OTP_SECRET = _otp_secret()
+
+# Bonus: Redis storage with TTL. Unset -> in-memory.
+REDIS_URL = os.environ.get("REDIS_URL") or None
 
 DEFAULT_OUTBOX = REPO_ROOT / "outbox" / "sms.jsonl"
 SECURITY_LOG = Path(os.environ.get("SECURITY_LOG") or REPO_ROOT / "security.log")
