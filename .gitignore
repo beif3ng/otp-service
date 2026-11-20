@@ -1,0 +1,9 @@
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+*.log
+.vscode/
+.idea/
+.claude/settings.local.json
+.claude/worktrees/
