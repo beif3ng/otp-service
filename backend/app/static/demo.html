@@ -25,9 +25,9 @@
   .brand span { color: var(--mauve); }
   .city { color: var(--subtext1); font-size: 14px; }
   .card { background: var(--base); border: 1px solid var(--surface0); border-radius: 16px; padding: 22px; }
-  .cart { display: flex; justify-content: space-between; color: var(--subtext1); font-size: 14px;
+  .cart { display: flex; justify-content: space-between; gap: 12px; color: var(--subtext1); font-size: 14px;
           padding-bottom: 14px; margin-bottom: 18px; border-bottom: 1px solid var(--surface0); }
-  .cart b { color: var(--text); }
+  .cart b { color: var(--text); white-space: nowrap; }
   h1 { margin: 0 0 6px; font-size: 21px; }
   p { margin: 0 0 16px; }
   .hint { color: var(--subtext1); font-size: 14px; }
@@ -77,7 +77,7 @@
   </header>
 
   <div class="card">
-    <div class="cart"><span>Корзина: самса ×4, айран ×2</span><b>640 сом</b></div>
+    <div class="cart"><span>Корзина: <span id="cartItems">самса ×4, айран ×2</span></span><b><span class="cartTotal">640</span> сом</b></div>
 
     <form id="phoneStep">
       <h1>Войдите, чтобы оформить заказ</h1>
@@ -108,7 +108,7 @@
     <div id="doneStep" hidden>
       <div class="ok">✓</div>
       <h1>Вы вошли</h1>
-      <p class="hint">Номер <b id="donePhone"></b> подтверждён. Заказ на 640 сом можно оформлять.</p>
+      <p class="hint">Номер <b id="donePhone"></b> подтверждён. Заказ на <span class="cartTotal">640</span> сом можно оформлять.</p>
       <button type="button" class="ghost" id="logoutBtn">Выйти</button>
     </div>
   </div>
@@ -150,6 +150,17 @@ const MESSAGES = {
 const CODE_TTL = 120; // s, the default OTP_TTL; only for the countdown, the server decides
 
 const $ = (id) => document.getElementById(id);
+
+// A random cart on every visit: 2-3 different dishes, 1-4 of each. Prices in som.
+const MENU = { "самса": 130, "айран": 60, "лагман": 280, "плов": 320, "манты": 300, "шашлык": 350, "боорсоки": 120, "компот": 70, "лепёшка": 40 };
+(function fillCart() {
+  const dishes = Object.keys(MENU).sort(() => Math.random() - 0.5).slice(0, 2 + Math.floor(Math.random() * 2));
+  const items = dishes.map((d) => [d, 1 + Math.floor(Math.random() * 4)]);
+  const total = items.reduce((sum, [d, n]) => sum + MENU[d] * n, 0).toLocaleString("ru-RU");
+  $("cartItems").textContent = items.map(([d, n]) => `${d} ×${n}`).join(", ");
+  document.querySelectorAll(".cartTotal").forEach((el) => { el.textContent = total; });
+})();
+
 let msisdn = "";
 let lastCode = "";
 let expiresAt = 0;   // ms, countdown of the current code
