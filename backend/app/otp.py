@@ -30,7 +30,7 @@ def now() -> float:
     return time.time()
 
 
-@dataclass
+@dataclass(frozen=True)
 class Result:
     status: int
     detail: str
@@ -144,9 +144,9 @@ def _next_send_at(n: Number) -> float:
     return at
 
 
-def _ip_send_retry(ip: str | None, t: float) -> float | None:
+def _ip_send_retry(ip: str, t: float) -> float | None:
     """Seconds until the IP may send again, None if allowed or the limit is off."""
-    if not config.SEND_IP_MAX or ip is None:
+    if not config.SEND_IP_MAX:
         return None
     sends = _store.timestamps("ipsend:" + ip)
     while sends and sends[0] <= t - config.SEND_IP_WINDOW:
@@ -156,12 +156,12 @@ def _ip_send_retry(ip: str | None, t: float) -> float | None:
     return sends[0] + config.SEND_IP_WINDOW - t
 
 
-def _rejected_send(t: float, kind: str, msisdn: str, ip: str | None) -> None:
+def _rejected_send(t: float, kind: str, msisdn: str, ip: str) -> None:
     """A refused send is an SMS the business did not pay for."""
     _event(t, kind, msisdn, ip, saved_som=config.SMS_PRICE_SOM)
 
 
-def send(msisdn: object, ip: str | None) -> Result:
+def send(msisdn: object, ip: str) -> Result:
     t = now()
     if not _valid_msisdn(msisdn):
         return Result(400, "invalid msisdn")
@@ -173,7 +173,7 @@ def send(msisdn: object, ip: str | None) -> Result:
             _save(msisdn, n)
 
 
-def _send(msisdn: str, ip: str | None, n: Number, t: float) -> Result:
+def _send(msisdn: str, ip: str, n: Number, t: float) -> Result:
     """Caller holds _lock and saves n."""
     if _locked(n, t):
         _rejected_send(t, "send_rejected_locked", msisdn, ip)
@@ -197,7 +197,7 @@ def _send(msisdn: str, ip: str | None, n: Number, t: float) -> Result:
         return Result(503, "sms delivery failed")
     n.otp_hash, n.otp_created, n.otp_used = _hash(msisdn, code), t, False
     n.sends.append((t, len(n.sends) + 1))
-    if config.SEND_IP_MAX and ip is not None:
+    if config.SEND_IP_MAX:
         key = "ipsend:" + ip
         sends = _store.timestamps(key)
         sends.append(t)

@@ -1,5 +1,5 @@
 import json
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
@@ -17,6 +17,14 @@ async def json_body(request: Request) -> Any:
         return json.loads(await request.body())
     except (ValueError, UnicodeDecodeError, RecursionError):
         return None
+
+
+Body = Annotated[Any, Depends(json_body)]
+
+
+def _client_ip(request: Request) -> str:
+    """IP of the connection; X-Forwarded-For is ignored (uvicorn --no-proxy-headers)."""
+    return request.client.host if request.client else "unknown"
 
 
 def _field(body: Any, name: str) -> Any:
@@ -43,14 +51,13 @@ def _schema(*fields: str) -> dict:
 
 # Endpoints are sync on purpose: threading.Lock inside async def would block the loop.
 @router.post("/otp/send", openapi_extra=_schema("msisdn"))
-def send(request: Request, body: Any = Depends(json_body)) -> JSONResponse:
-    return _respond(otp.send(_field(body, "msisdn"), request.client.host if request.client else None))
+def send(request: Request, body: Body) -> JSONResponse:
+    return _respond(otp.send(_field(body, "msisdn"), _client_ip(request)))
 
 
 @router.post("/otp/verify", openapi_extra=_schema("msisdn", "code"))
-def verify(request: Request, body: Any = Depends(json_body)) -> JSONResponse:
-    ip = request.client.host if request.client else "unknown"
-    return _respond(otp.verify(_field(body, "msisdn"), _field(body, "code"), ip))
+def verify(request: Request, body: Body) -> JSONResponse:
+    return _respond(otp.verify(_field(body, "msisdn"), _field(body, "code"), _client_ip(request)))
 
 
 @router.get("/events")
