@@ -4,7 +4,7 @@ Every test starts with empty state at a fixed moment; time moves only via clock.
 """
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -16,7 +16,7 @@ from app.main import app
 MSISDN = "996770730000"
 IP = "192.0.2.10"
 OTHER_IP = "198.51.100.20"
-START = datetime(2026, 11, 21, 3, 0, tzinfo=timezone.utc).timestamp()  # 09:00 in Bishkek
+START = datetime(2026, 11, 21, 3, 0, tzinfo=UTC).timestamp()  # 09:00 in Bishkek
 
 
 class Clock:

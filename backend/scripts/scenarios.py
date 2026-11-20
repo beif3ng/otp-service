@@ -36,11 +36,11 @@ BACKEND = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND))  # make `app` importable when run as a script
 warnings.filterwarnings("ignore", message="Using `httpx`")  # starlette TestClient notice
 
-import httpx  # noqa: E402
-from fastapi.testclient import TestClient  # noqa: E402
+import httpx
+from fastapi.testclient import TestClient
 
-from app import config, otp  # noqa: E402
-from app.main import app  # noqa: E402
+from app import config, otp
+from app.main import app
 
 SCENARIOS = BACKEND / "tests" / "scenarios_examples.json"
 START = datetime.fromisoformat("2026-11-20T12:00:00+06:00").timestamp()  # test_identities.json
@@ -132,9 +132,9 @@ class Live:
             try:
                 httpx.get(f"{self.base}/events", timeout=1)
                 break
-            except httpx.TransportError:
+            except httpx.TransportError as exc:
                 if self.proc.poll() is not None or time.monotonic() > deadline:
-                    raise RuntimeError("uvicorn did not start")
+                    raise RuntimeError("uvicorn did not start") from exc
                 time.sleep(0.1)
         self.client = httpx.Client(base_url=self.base, timeout=30)
         self.client.get("/events")  # open the keep-alive connection before timing starts

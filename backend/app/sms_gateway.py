@@ -134,7 +134,7 @@ def poll_updates(bot: Bot, bindings: Bindings) -> None:
             if "message" in update:
                 try:
                     handle(bot, bindings, update["message"])
-                except Exception as e:  # one odd update must not stop the bot for everyone
+                except Exception as e:  # noqa: BLE001 — one odd update must not stop the bot for everyone
                     print(f"telegram update skipped: {type(e).__name__}", flush=True)
 
 
