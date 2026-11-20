@@ -26,7 +26,7 @@ SERIES = {
 _lock = threading.Lock()
 _path: Path | None = None
 _offset = 0
-_counts: dict[int, Counter] = {}  # bucket start (Unix seconds) -> {"brute": n, "pumping": n}
+_counts: dict[int, Counter] = {}  # bucket start (Unix seconds) -> {"brute", "pumping", "saved_som"}
 
 
 def _read_new(path: Path) -> None:
@@ -51,7 +51,9 @@ def _read_new(path: Path) -> None:
             series = SERIES.get(event["type"])
             if series:
                 t = datetime.fromisoformat(event["ts"]).timestamp()
-                _counts.setdefault(int(t // BUCKET_SECONDS) * BUCKET_SECONDS, Counter())[series] += 1
+                c = _counts.setdefault(int(t // BUCKET_SECONDS) * BUCKET_SECONDS, Counter())
+                c[series] += 1
+                c["saved_som"] += float(event.get("saved_som") or 0)
         except (ValueError, KeyError, TypeError):
             continue  # a broken line must not break the dashboard
 
@@ -67,5 +69,7 @@ def history() -> dict:
         for start in range(first, last + BUCKET_SECONDS, BUCKET_SECONDS):
             c = _counts.get(start, Counter())
             ts = datetime.fromtimestamp(start, otp.BISHKEK).isoformat(timespec="seconds")
-            buckets.append({"ts": ts, "brute": c["brute"], "pumping": c["pumping"]})
+            buckets.append(
+                {"ts": ts, "brute": c["brute"], "pumping": c["pumping"], "saved_som": round(c["saved_som"], 2)}
+            )
         return {"bucket_seconds": BUCKET_SECONDS, "buckets": buckets}
