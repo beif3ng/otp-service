@@ -39,7 +39,24 @@
   input { flex: 1; border: 0; outline: 0; background: transparent; color: var(--text);
           font: inherit; font-size: 20px; padding: 12px 0; min-width: 0; }
   input::placeholder { color: var(--subtext1); opacity: 1; }
-  #code { letter-spacing: 10px; text-indent: 10px; text-align: center; font-size: 26px; } /* indent offsets the trailing letter-spacing */
+  /* Code: one real input (paste, SMS autofill, mobile keyboards) lies transparent over 6 painted cells. */
+  .otp { position: relative; display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+  .otp .cell { height: 56px; display: grid; place-items: center; border: 1.5px solid var(--surface0); border-radius: 12px;
+               background: var(--base); font-size: 26px; font-weight: 600; transition: border-color .15s; }
+  .otp .cell.filled { border-color: var(--overlay0); }
+  .otp:focus-within .cell.active { border-color: var(--mauve); box-shadow: 0 0 0 3px rgb(136 57 239 / .15); }
+  .otp:focus-within .cell.active::after { content: ""; width: 2px; height: 26px; background: var(--mauve);
+                                          animation: blink 1s steps(1) infinite; }
+  .otp .cell.pop { animation: pop .18s ease-out; }
+  .otp.bad .cell { border-color: var(--red); }
+  .otp.bad { animation: shake .3s; }
+  #code { position: absolute; inset: 0; z-index: 1; padding: 0; color: transparent; -webkit-text-fill-color: transparent;
+          caret-color: transparent; }
+  #code::selection { background: transparent; }
+  @keyframes pop { from { transform: scale(.6); opacity: .3; } }
+  @keyframes blink { 50% { opacity: 0; } }
+  @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+  @media (prefers-reduced-motion: reduce) { .otp .cell.pop, .otp.bad, .otp .cell.active::after { animation: none; } }
   button { font: inherit; border: 0; border-radius: 12px; padding: 13px 16px; cursor: pointer; width: 100%;
            font-weight: 600; margin-top: 14px; background: var(--mauve); color: var(--base); }
   button.ghost { background: transparent; color: var(--mauve); border: 1.5px solid var(--surface0); }
@@ -95,7 +112,12 @@
       <p class="hint">Отправили 6 цифр на <b id="shownPhone"></b>. Привяжите номер в Telegram-боте
         <a href="https://t.me/otp_shield_bot" target="_blank" rel="noopener">@otp_shield_bot</a> — код придёт туда.
         Без бота код лежит в <code>outbox/sms.jsonl</code>.</p>
-      <div class="field"><input id="code" inputmode="numeric" autocomplete="one-time-code" placeholder="••••••" maxlength="6" required></div>
+      <div class="otp" id="otp">
+        <div class="cell active" aria-hidden="true"></div><div class="cell" aria-hidden="true"></div><div class="cell" aria-hidden="true"></div>
+        <div class="cell" aria-hidden="true"></div><div class="cell" aria-hidden="true"></div><div class="cell" aria-hidden="true"></div>
+        <!-- no maxlength: it cut a pasted "Код входа: 012345" before the digits were picked out -->
+        <input id="code" inputmode="numeric" autocomplete="one-time-code" aria-label="Код из 6 цифр" required>
+      </div>
       <button id="verifyBtn">Войти</button>
       <div class="msg err" id="codeMsg" role="alert"></div>
       <div class="row">
@@ -205,7 +227,7 @@ async function send() {
     expiresAt = Date.now() + CODE_TTL * 1000;
     resendAt = 0;
     say("codeMsg", "");
-    $("code").value = "";
+    setCode("");
   } else if (r.status === 429 && r.detail === "too many requests") {
     resendAt = Date.now() + r.retry * 1000; // a rejected send keeps the current code valid
   } else if (r.status === 423) {
@@ -238,7 +260,8 @@ async function verify(code) {
   const r = await api("/otp/verify", { msisdn, code });
   if (r.status === 200) return show("doneStep");
   say("codeMsg", r.detail);
-  $("code").value = "";
+  setCode("");
+  $("otp").classList.add("bad");
   if (r.status === 423) expiresAt = 0; // the lock voids the code
 }
 
@@ -248,17 +271,46 @@ $("codeStep").onsubmit = (e) => {
   updateRace();
   verify(lastCode);
 };
-$("code").oninput = () => {
-  $("code").value = $("code").value.replace(/\D/g, "").slice(0, 6);
-  if ($("code").value.length === 6) lastCode = $("code").value;
+// Code cells paint the input value. New digits pop in left to right, a paste one by one.
+const cells = [...document.querySelectorAll("#otp .cell")];
+let painted = "";
+function setCode(value) {
+  $("code").value = value;
+  let from = 0; // first cell that changed
+  while (from < value.length && value[from] === painted[from]) from++;
+  painted = value;
+  $("otp").classList.remove("bad");
+  cells.forEach((cell, i) => {
+    cell.classList.toggle("active", i === value.length);
+    if (i >= value.length) {
+      cell.textContent = "";
+      cell.classList.remove("filled", "pop");
+    } else if (i >= from) {
+      setTimeout(() => {
+        const digit = $("code").value[i];
+        if (!digit) return; // erased meanwhile
+        cell.textContent = digit;
+        cell.classList.add("filled");
+        cell.classList.remove("pop");
+        void cell.offsetWidth; // restart the animation
+        cell.classList.add("pop");
+      }, (i - from) * 60);
+    }
+  });
+  if (value.length === 6) lastCode = value;
   updateRace();
-};
+}
+// "Код входа: 012345\nДействует 2 мин" -> "012345": a run of 6 digits wins, else all digits.
+const codeOf = (text) => ((text.match(/\d{6}/) || [text.replace(/\D/g, "")])[0]).slice(0, 6);
+$("code").oninput = () => setCode(codeOf($("code").value));
+const caretToEnd = () => requestAnimationFrame(() => { const n = $("code").value.length; $("code").setSelectionRange(n, n); });
+$("code").onfocus = $("code").onclick = caretToEnd; // cells fill only at the end
 $("resendBtn").onclick = async () => {
   const r = await send();
   say("codeMsg", r.status === 200 ? "" : r.detail);
 };
 $("backBtn").onclick = () => show("phoneStep");
-$("logoutBtn").onclick = () => { $("code").value = ""; say("codeMsg", ""); show("phoneStep"); };
+$("logoutBtn").onclick = () => { setCode(""); say("codeMsg", ""); show("phoneStep"); };
 
 function updateRace() {
   $("raceBtn").disabled = !(msisdn && lastCode.length === 6);
