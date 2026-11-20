@@ -38,24 +38,30 @@ def _read_new(path: Path) -> None:
         if path.stat().st_size < _offset:  # the journal was truncated or replaced
             _offset = 0
             _counts.clear()
-        with path.open("rb") as f:
-            f.seek(_offset)
-            data = f.read()
+        f = path.open("rb")
     except OSError:
         return  # no journal yet
-    end = data.rfind(b"\n") + 1  # a line still being written is picked up next time
-    _offset += end
-    for line in data[:end].splitlines():
-        try:
-            event = json.loads(line)
-            series = SERIES.get(event["type"])
-            if series:
-                t = datetime.fromisoformat(event["ts"]).timestamp()
-                c = _counts.setdefault(int(t // BUCKET_SECONDS) * BUCKET_SECONDS, Counter())
-                c[series] += 1
-                c["saved_som"] += float(event.get("saved_som") or 0)
-        except (ValueError, KeyError, TypeError):
-            continue  # a broken line must not break the dashboard
+    with f:
+        f.seek(_offset)
+        for line in f:  # line by line, not f.read(): the journal on the VM grows with every attack
+            if not line.endswith(b"\n"):
+                break  # a line still being written is picked up next time
+            _offset += len(line)
+            _count(line)
+
+
+def _count(line: bytes) -> None:
+    try:
+        event = json.loads(line)
+        series = SERIES.get(event["type"])
+        if not series:
+            return
+        t = datetime.fromisoformat(event["ts"]).timestamp()
+        c = _counts.setdefault(int(t // BUCKET_SECONDS) * BUCKET_SECONDS, Counter())
+        c[series] += 1
+        c["saved_som"] += float(event.get("saved_som") or 0)
+    except (ValueError, KeyError, TypeError):
+        pass  # a broken line must not break the dashboard
 
 
 def history() -> dict:
