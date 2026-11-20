@@ -1,0 +1,4979 @@
+[
+  {
+    "id": "G02",
+    "title": "O02? повторное использование кода -> 401",
+    "fixture": "test_identities.json",
+    "overrides": {},
+    "steps": [
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730000",
+        "bind": "c1"
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      }
+    ]
+  },
+  {
+    "id": "G02b",
+    "title": "O02? код ещё жив на 119.999 с",
+    "fixture": "test_identities.json",
+    "overrides": {},
+    "steps": [
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730000",
+        "bind": "c1"
+      },
+      {
+        "op": "advance",
+        "seconds": 119.999
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 200
+        }
+      }
+    ]
+  },
+  {
+    "id": "G04",
+    "title": "O04? истёкший код: повторно снова 410, новый send после истечения работает",
+    "fixture": "test_identities.json",
+    "overrides": {},
+    "steps": [
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730000",
+        "bind": "c1"
+      },
+      {
+        "op": "advance",
+        "seconds": 120
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 410
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 410
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 410
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730000",
+        "bind": "c2"
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$c2"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 200
+        }
+      }
+    ]
+  },
+  {
+    "id": "G05",
+    "title": "O05? verify без send -> 401 (нет активного кода)",
+    "fixture": "test_identities.json",
+    "overrides": {},
+    "steps": [
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "000000"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      }
+    ]
+  },
+  {
+    "id": "G05b",
+    "title": "O05? неверный код при активном OTP -> 401, затем верный -> 200",
+    "fixture": "test_identities.json",
+    "overrides": {},
+    "steps": [
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730000",
+        "bind": "c1"
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 200
+        }
+      }
+    ]
+  },
+  {
+    "id": "G05c",
+    "title": "O05? код одного номера не подходит другому (HMAC привязан к msisdn)",
+    "fixture": "test_identities.json",
+    "overrides": {},
+    "steps": [
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730000",
+        "bind": "a"
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730001"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730001",
+        "bind": "b"
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730001",
+          "code": "$a"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730001",
+          "code": "$b"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$a"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 200
+        }
+      }
+    ]
+  },
+  {
+    "id": "G06",
+    "title": "O06? формат verify -> 400 и не увеличивает счётчик",
+    "fixture": "test_identities.json",
+    "overrides": {},
+    "steps": [
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730000",
+        "bind": "c1"
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "12345"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "1234567"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "12345a"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": 123456
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": ""
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {},
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "99677073000",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "9967707300000",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "997770730000",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": 996770730000,
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 423
+        }
+      }
+    ]
+  },
+  {
+    "id": "G06b",
+    "title": "O06? формат send -> 400; лишние поля игнорируются",
+    "fixture": "test_identities.json",
+    "overrides": {},
+    "steps": [
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "99677073000"
+        },
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "9967707300000"
+        },
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "997770730000"
+        },
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "+996770730000"
+        },
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": 996770730000
+        },
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {},
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": null
+        },
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000",
+          "extra": "x"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730000",
+        "bind": "c1"
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 200
+        }
+      }
+    ]
+  },
+  {
+    "id": "G06c",
+    "title": "O06? '000000' - допустимый формат (401, не 400)",
+    "fixture": "test_identities.json",
+    "overrides": {},
+    "steps": [
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730000",
+        "bind": "c1"
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "000000"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 200
+        }
+      }
+    ]
+  },
+  {
+    "id": "G08",
+    "title": "O08? повтор ровно на 30 с -> 200, старый код аннулирован",
+    "fixture": "test_identities.json",
+    "overrides": {},
+    "steps": [
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730000",
+        "bind": "c1"
+      },
+      {
+        "op": "advance",
+        "seconds": 30
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730000",
+        "bind": "c2"
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$c2"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 200
+        }
+      }
+    ]
+  },
+  {
+    "id": "G09",
+    "title": "O09? вторая ступень: 59.999 с после 2-й -> 429, 60 с -> 200",
+    "fixture": "test_identities.json",
+    "overrides": {},
+    "steps": [
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "advance",
+        "seconds": 30
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "advance",
+        "seconds": 59.999
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 429
+        }
+      },
+      {
+        "op": "advance",
+        "seconds": 0.001
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730000",
+        "bind": "c1"
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 200
+        }
+      }
+    ]
+  },
+  {
+    "id": "G10",
+    "title": "O10? после 3-й: 120 с прошло, но 3 в окне -> 429 до 600 с",
+    "fixture": "test_identities.json",
+    "overrides": {},
+    "steps": [
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "advance",
+        "seconds": 30
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "advance",
+        "seconds": 60
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "advance",
+        "seconds": 119.999
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 429
+        }
+      },
+      {
+        "op": "advance",
+        "seconds": 0.001
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 429
+        }
+      },
+      {
+        "op": "advance",
+        "seconds": 389.999
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 429
+        }
+      },
+      {
+        "op": "advance",
+        "seconds": 0.001
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730000",
+        "bind": "c1"
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 200
+        }
+      }
+    ]
+  },
+  {
+    "id": "G11",
+    "title": "O11? окно опустело -> ступень снова 30 с",
+    "fixture": "test_identities.json",
+    "overrides": {},
+    "steps": [
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "advance",
+        "seconds": 30
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "advance",
+        "seconds": 60
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "advance",
+        "seconds": 600
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "advance",
+        "seconds": 29.999
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 429
+        }
+      },
+      {
+        "op": "advance",
+        "seconds": 0.001
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      }
+    ]
+  },
+  {
+    "id": "G11b",
+    "title": "O11? отказ send (429) не аннулирует действующий код",
+    "fixture": "test_identities.json",
+    "overrides": {},
+    "steps": [
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730000",
+        "bind": "c1"
+      },
+      {
+        "op": "advance",
+        "seconds": 10
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 429
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 429
+        }
+      },
+      {
+        "op": "advance",
+        "seconds": 15
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 429
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 200
+        }
+      }
+    ]
+  },
+  {
+    "id": "G11c",
+    "title": "O11? лимиты send - на номер: другой номер не задерживается",
+    "fixture": "test_identities.json",
+    "overrides": {},
+    "steps": [
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730001"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730002"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 429
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730001",
+        "bind": "b"
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730001",
+          "code": "$b"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 200
+        }
+      }
+    ]
+  },
+  {
+    "id": "G13",
+    "title": "O13? блокировка ровно 900 с: на 899.999 - 423, на 900 - send 200",
+    "fixture": "test_identities.json",
+    "overrides": {},
+    "steps": [
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730000",
+        "bind": "c1"
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 423
+        }
+      },
+      {
+        "op": "advance",
+        "seconds": 899.999
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 423
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 423
+        }
+      },
+      {
+        "op": "advance",
+        "seconds": 0.001
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730000",
+        "bind": "c2"
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$c2"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 200
+        }
+      }
+    ]
+  },
+  {
+    "id": "G13b",
+    "title": "O13? после блокировки счётчик с нуля: снова 4x401 и 423 на 5-й",
+    "fixture": "test_identities.json",
+    "overrides": {},
+    "steps": [
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730000",
+        "bind": "c1"
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 423
+        }
+      },
+      {
+        "op": "advance",
+        "seconds": 900
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730000",
+        "bind": "c2"
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c2"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c2"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c2"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c2"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c2"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 423
+        }
+      }
+    ]
+  },
+  {
+    "id": "G13c",
+    "title": "O13? блокировка одного номера не трогает другой",
+    "fixture": "test_identities.json",
+    "overrides": {},
+    "steps": [
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730000",
+        "bind": "a"
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730001"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730001",
+        "bind": "b"
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:a"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:a"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:a"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:a"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:a"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 423
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730001",
+          "code": "$b"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 423
+        }
+      }
+    ]
+  },
+  {
+    "id": "G14",
+    "title": "O14? счётчик не растёт от: нет кода, истёкший код, формат",
+    "fixture": "test_identities.json",
+    "overrides": {},
+    "steps": [
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730000",
+        "bind": "c1"
+      },
+      {
+        "op": "advance",
+        "seconds": 120
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 410
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 410
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 410
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 410
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 410
+        }
+      },
+      {
+        "op": "advance",
+        "seconds": 60
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730000",
+        "bind": "c2"
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c2"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c2"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c2"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c2"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c2"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 423
+        }
+      }
+    ]
+  },
+  {
+    "id": "G14b",
+    "title": "O14? счётчик на номер: send между ошибками не обнуляет (НАША трактовка)",
+    "fixture": "test_identities.json",
+    "overrides": {},
+    "steps": [
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730000",
+        "bind": "c1"
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "advance",
+        "seconds": 30
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730000",
+        "bind": "c2"
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c2"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 423
+        }
+      }
+    ]
+  },
+  {
+    "id": "G14c",
+    "title": "O14? успешный verify обнуляет счётчик",
+    "fixture": "test_identities.json",
+    "overrides": {},
+    "steps": [
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730000",
+        "bind": "c1"
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "advance",
+        "seconds": 30
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730000",
+        "bind": "c2"
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c2"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c2"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c2"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c2"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$c2"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 200
+        }
+      }
+    ]
+  },
+  {
+    "id": "G15",
+    "title": "O15? IP-лимит: 20 verify по разным номерам проходят, 21-й -> 429, другой IP - нет",
+    "fixture": "test_identities.json",
+    "overrides": {},
+    "steps": [
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730001",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730002",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730003",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730004",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730005",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730006",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730007",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730008",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730009",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730010",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730011",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730012",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730013",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730014",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730015",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730016",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730017",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730018",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730019",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 429
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "123456"
+        },
+        "client_ip": "198.51.100.20",
+        "expected": {
+          "status": 401
+        }
+      }
+    ]
+  },
+  {
+    "id": "G15b",
+    "title": "O15? окно IP скользящее (t-60, t]: 59.999 с - 429, 60 с - снова можно",
+    "fixture": "test_identities.json",
+    "overrides": {},
+    "steps": [
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730001",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730002",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730003",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730004",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730005",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730006",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730007",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730008",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730009",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730010",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730011",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730012",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730013",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730014",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730015",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730016",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730017",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730018",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730019",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "advance",
+        "seconds": 59.999
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 429
+        }
+      },
+      {
+        "op": "advance",
+        "seconds": 0.001
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      }
+    ]
+  },
+  {
+    "id": "G15c",
+    "title": "O15? 400 тоже идут в IP-лимит",
+    "fixture": "test_identities.json",
+    "overrides": {},
+    "steps": [
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 429
+        }
+      }
+    ]
+  },
+  {
+    "id": "G15d",
+    "title": "O15? IP-лимит раньше блокировки: заблокированный номер получает 429, не 423",
+    "fixture": "test_identities.json",
+    "overrides": {},
+    "steps": [
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730000",
+        "bind": "c1"
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$wrong:c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 423
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "bad"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 400
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 429
+        }
+      }
+    ]
+  },
+  {
+    "id": "G15e",
+    "title": "O15? отказы 429 не продлевают окно IP",
+    "fixture": "test_identities.json",
+    "overrides": {},
+    "steps": [
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730001",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730002",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730003",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730004",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730005",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730006",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730007",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730008",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730009",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730010",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730011",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730012",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730013",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730014",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730015",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730016",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730017",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730018",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730019",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      },
+      {
+        "op": "advance",
+        "seconds": 30
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 429
+        }
+      },
+      {
+        "op": "advance",
+        "seconds": 29.999
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 429
+        }
+      },
+      {
+        "op": "advance",
+        "seconds": 0.001
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "123456"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 401
+        }
+      }
+    ]
+  },
+  {
+    "id": "G17",
+    "title": "O17? 20 параллельных verify с неверным кодом: ровно 4x401 и 16x423",
+    "fixture": "test_identities.json",
+    "overrides": {},
+    "steps": [
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730000",
+        "bind": "c1"
+      },
+      {
+        "op": "parallel",
+        "requests": [
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$wrong:c1"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$wrong:c1"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$wrong:c1"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$wrong:c1"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$wrong:c1"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$wrong:c1"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$wrong:c1"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$wrong:c1"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$wrong:c1"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$wrong:c1"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$wrong:c1"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$wrong:c1"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$wrong:c1"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$wrong:c1"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$wrong:c1"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$wrong:c1"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$wrong:c1"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$wrong:c1"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$wrong:c1"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$wrong:c1"
+            },
+            "client_ip": "192.0.2.10"
+          }
+        ],
+        "expected": {
+          "count": 20,
+          "status_counts": {
+            "401": 4,
+            "423": 16
+          }
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$c1"
+        },
+        "client_ip": "198.51.100.20",
+        "expected": {
+          "status": 423
+        }
+      }
+    ]
+  },
+  {
+    "id": "G17b",
+    "title": "O17? 20 параллельных send одного номера: ровно один 200",
+    "fixture": "test_identities.json",
+    "overrides": {},
+    "steps": [
+      {
+        "op": "parallel",
+        "requests": [
+          {
+            "method": "POST",
+            "path": "/otp/send",
+            "body": {
+              "msisdn": "996770730000"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/otp/send",
+            "body": {
+              "msisdn": "996770730000"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/otp/send",
+            "body": {
+              "msisdn": "996770730000"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/otp/send",
+            "body": {
+              "msisdn": "996770730000"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/otp/send",
+            "body": {
+              "msisdn": "996770730000"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/otp/send",
+            "body": {
+              "msisdn": "996770730000"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/otp/send",
+            "body": {
+              "msisdn": "996770730000"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/otp/send",
+            "body": {
+              "msisdn": "996770730000"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/otp/send",
+            "body": {
+              "msisdn": "996770730000"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/otp/send",
+            "body": {
+              "msisdn": "996770730000"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/otp/send",
+            "body": {
+              "msisdn": "996770730000"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/otp/send",
+            "body": {
+              "msisdn": "996770730000"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/otp/send",
+            "body": {
+              "msisdn": "996770730000"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/otp/send",
+            "body": {
+              "msisdn": "996770730000"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/otp/send",
+            "body": {
+              "msisdn": "996770730000"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/otp/send",
+            "body": {
+              "msisdn": "996770730000"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/otp/send",
+            "body": {
+              "msisdn": "996770730000"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/otp/send",
+            "body": {
+              "msisdn": "996770730000"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/otp/send",
+            "body": {
+              "msisdn": "996770730000"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/otp/send",
+            "body": {
+              "msisdn": "996770730000"
+            }
+          }
+        ],
+        "expected": {
+          "count": 20,
+          "status_counts": {
+            "200": 1,
+            "429": 19
+          }
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730000",
+        "bind": "c1"
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/verify",
+        "body": {
+          "msisdn": "996770730000",
+          "code": "$c1"
+        },
+        "client_ip": "192.0.2.10",
+        "expected": {
+          "status": 200
+        }
+      }
+    ]
+  },
+  {
+    "id": "G17c",
+    "title": "O17? 21 параллельный verify с одного IP: ровно один 429",
+    "fixture": "test_identities.json",
+    "overrides": {},
+    "steps": [
+      {
+        "op": "parallel",
+        "requests": [
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "123456"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730001",
+              "code": "123456"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730002",
+              "code": "123456"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730003",
+              "code": "123456"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730004",
+              "code": "123456"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730005",
+              "code": "123456"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730006",
+              "code": "123456"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730007",
+              "code": "123456"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730008",
+              "code": "123456"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730009",
+              "code": "123456"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730010",
+              "code": "123456"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730011",
+              "code": "123456"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730012",
+              "code": "123456"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730013",
+              "code": "123456"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730014",
+              "code": "123456"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730015",
+              "code": "123456"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730016",
+              "code": "123456"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730017",
+              "code": "123456"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730018",
+              "code": "123456"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730019",
+              "code": "123456"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730020",
+              "code": "123456"
+            },
+            "client_ip": "192.0.2.10"
+          }
+        ],
+        "expected": {
+          "count": 21,
+          "status_counts": {
+            "401": 20,
+            "429": 1
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "G18",
+    "title": "O18? параллельные verify верным кодом с двух IP: ровно один 200",
+    "fixture": "test_identities.json",
+    "overrides": {},
+    "steps": [
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730000",
+        "bind": "c1"
+      },
+      {
+        "op": "parallel",
+        "requests": [
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$c1"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$c1"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$c1"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$c1"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$c1"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$c1"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$c1"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$c1"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$c1"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$c1"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$c1"
+            },
+            "client_ip": "198.51.100.20"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$c1"
+            },
+            "client_ip": "198.51.100.20"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$c1"
+            },
+            "client_ip": "198.51.100.20"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$c1"
+            },
+            "client_ip": "198.51.100.20"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$c1"
+            },
+            "client_ip": "198.51.100.20"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$c1"
+            },
+            "client_ip": "198.51.100.20"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$c1"
+            },
+            "client_ip": "198.51.100.20"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$c1"
+            },
+            "client_ip": "198.51.100.20"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$c1"
+            },
+            "client_ip": "198.51.100.20"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$c1"
+            },
+            "client_ip": "198.51.100.20"
+          }
+        ],
+        "expected": {
+          "count": 20,
+          "status_counts": {
+            "200": 1,
+            "401": 19
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "G18b",
+    "title": "O18? параллельные verify верными кодами по 10 номерам: у каждого номера ровно один 200",
+    "fixture": "test_identities.json",
+    "overrides": {},
+    "steps": [
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730000"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730001"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730002"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730003"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730004"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730005"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730006"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730007"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730008"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "request",
+        "method": "POST",
+        "path": "/otp/send",
+        "body": {
+          "msisdn": "996770730009"
+        },
+        "expected": {
+          "status": 200
+        }
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730000",
+        "bind": "k0"
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730001",
+        "bind": "k1"
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730002",
+        "bind": "k2"
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730003",
+        "bind": "k3"
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730004",
+        "bind": "k4"
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730005",
+        "bind": "k5"
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730006",
+        "bind": "k6"
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730007",
+        "bind": "k7"
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730008",
+        "bind": "k8"
+      },
+      {
+        "op": "capture_delivery",
+        "msisdn": "996770730009",
+        "bind": "k9"
+      },
+      {
+        "op": "parallel",
+        "requests": [
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$k0"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730001",
+              "code": "$k1"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730002",
+              "code": "$k2"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730003",
+              "code": "$k3"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730004",
+              "code": "$k4"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730005",
+              "code": "$k5"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730006",
+              "code": "$k6"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730007",
+              "code": "$k7"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730008",
+              "code": "$k8"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730009",
+              "code": "$k9"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730000",
+              "code": "$k0"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730001",
+              "code": "$k1"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730002",
+              "code": "$k2"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730003",
+              "code": "$k3"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730004",
+              "code": "$k4"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730005",
+              "code": "$k5"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730006",
+              "code": "$k6"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730007",
+              "code": "$k7"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730008",
+              "code": "$k8"
+            },
+            "client_ip": "192.0.2.10"
+          },
+          {
+            "method": "POST",
+            "path": "/otp/verify",
+            "body": {
+              "msisdn": "996770730009",
+              "code": "$k9"
+            },
+            "client_ip": "192.0.2.10"
+          }
+        ],
+        "expected": {
+          "count": 20,
+          "status_counts": {
+            "200": 10,
+            "401": 10
+          }
+        }
+      }
+    ]
+  }
+]

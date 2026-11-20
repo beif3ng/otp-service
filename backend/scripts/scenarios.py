@@ -14,6 +14,7 @@ Usage, from backend/:
     uv run python scripts/scenarios.py              # all scenarios, fake clock
     uv run python scripts/scenarios.py O12 O16      # selected ones
     uv run python scripts/scenarios.py --live       # real time, ~3 min
+    uv run python scripts/scenarios.py --file tests/scenarios_guess.json  # our guesses
 """
 
 import argparse
@@ -288,9 +289,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Replay jury scenarios with a step log.")
     parser.add_argument("ids", nargs="*", help="scenario ids, e.g. O12 O16; default: all")
     parser.add_argument("--live", action="store_true", help="real uvicorn, real HTTP, real seconds")
+    parser.add_argument("--file", type=Path, default=SCENARIOS, help="scenario file in the jury format")
     args = parser.parse_args()
 
-    scenarios = [s for s in load() if not args.ids or s["id"] in args.ids]
+    scenarios = [s for s in load(args.file) if not args.ids or s["id"] in args.ids]
     if not scenarios:
         print(f"no scenarios match {args.ids}")
         return 2
