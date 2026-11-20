@@ -13,7 +13,7 @@ import re
 import secrets
 import threading
 import time
-from collections import deque
+from collections import Counter, deque
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
@@ -47,6 +47,10 @@ _lock = threading.Lock()
 _store = store.connect(config.REDIS_URL, lambda: now())  # lambda: tests replace now()
 _numbers = getattr(_store, "numbers", None)  # in-memory mode only: lets tests inspect storage
 _events: deque[dict] = deque(maxlen=config.EVENTS_KEEP)
+# Totals since start: /events keeps only the last EVENTS_KEEP, so a pump of 429s
+# would push everything else out. In memory in both modes: one worker.
+_counts: Counter[str] = Counter()
+_saved_som = 0.0
 # A number key outlives every time-based state in it: send window, code TTL, lock.
 # At least a day, so an expired code still answers 410 long after its TTL.
 NUMBER_TTL = max(config.SEND_WINDOW, config.OTP_TTL, config.LOCK_SECONDS, 86400)
@@ -55,13 +59,22 @@ NUMBER_TTL = max(config.SEND_WINDOW, config.OTP_TTL, config.LOCK_SECONDS, 86400)
 def reset() -> None:
     """Clear all state. For tests."""
     with _lock:
+        global _saved_som
         _store.clear()
         _events.clear()
+        _counts.clear()
+        _saved_som = 0.0
 
 
 def recent_events() -> list[dict]:
     with _lock:
         return list(reversed(_events))
+
+
+def stats() -> dict:
+    """Event counts by type and SMS money saved by refused sends, since start."""
+    with _lock:
+        return {"counts": dict(_counts), "saved_som": round(_saved_som, 2)}
 
 
 def _hash(msisdn: str, code: str) -> bytes:
@@ -82,8 +95,11 @@ def _iso(t: float) -> str:
 
 def _event(t: float, kind: str, msisdn: str | None = None, ip: str | None = None, **extra) -> None:
     """Security journal: never contains a code or its hash. Caller holds _lock."""
+    global _saved_som
     event = {"ts": _iso(t), "type": kind, "msisdn": msisdn, "ip": ip, **extra}
     _events.append(event)
+    _counts[kind] += 1
+    _saved_som += extra.get("saved_som", 0.0)
     try:
         with config.SECURITY_LOG.open("a", encoding="utf-8") as f:
             f.write(json.dumps(event, ensure_ascii=False) + "\n")

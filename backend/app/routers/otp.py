@@ -56,3 +56,8 @@ def verify(request: Request, body: Any = Depends(json_body)) -> JSONResponse:
 @router.get("/events")
 def events() -> list[dict]:
     return otp.recent_events()
+
+
+@router.get("/stats")
+def stats() -> dict:
+    return otp.stats()

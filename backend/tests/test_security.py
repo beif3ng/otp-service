@@ -46,4 +46,4 @@ def test_events_record_security_actions(api, clock):
 
 def test_no_public_way_to_read_code(api):
     paths = set(api.client().get("/openapi.json").json()["paths"])
-    assert paths == {"/otp/send", "/otp/verify", "/events"}
+    assert paths == {"/otp/send", "/otp/verify", "/events", "/stats"}
