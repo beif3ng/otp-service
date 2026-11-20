@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
 <title>OTP Shield · события безопасности</title>
 <style>
   /* Catppuccin Mocha */
@@ -18,100 +19,144 @@
     font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     font-variant-numeric: tabular-nums;
   }
-  main { max-width: 1100px; margin: 0 auto; padding: 28px 24px 48px; }
-  header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  main { max-width: 1160px; margin: 0 auto; padding: 28px 24px 48px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
   h1 { margin: 0; font-size: 22px; font-weight: 600; }
+  h1 span { color: var(--overlay0); font-weight: 400; }
   h2 { margin: 0 0 12px; font-size: 15px; font-weight: 600; color: var(--subtext0); }
-  .status { color: var(--subtext0); font-size: 13px; display: flex; align-items: center; gap: 8px; }
-  .status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
-  .status.down::before { background: var(--red); }
+  .card { border-radius: 14px; background: var(--mantle); border: 1px solid var(--surface0); transition: border-color .4s, box-shadow .4s; }
 
-  .hero {
-    margin: 24px 0 16px; padding: 24px; border-radius: 12px; background: var(--mantle);
-    border: 1px solid var(--surface0);
+  /* Status pill: calm / under attack / offline */
+  .status {
+    display: inline-flex; align-items: center; gap: 10px; padding: 6px 14px; border-radius: 999px;
+    font-size: 13px; color: var(--subtext0); background: var(--mantle); border: 1px solid var(--surface0);
   }
+  .status::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--green); }
+  .status.attack { color: var(--text); border-color: var(--red); }
+  .status.attack::before { background: var(--red); animation: pulse 1s ease-out infinite; }
+  .status.down::before { background: var(--overlay0); }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgb(243 139 168 / .7); }
+    100% { box-shadow: 0 0 0 10px rgb(243 139 168 / 0); }
+  }
+  body.attack .hero { border-color: rgb(243 139 168 / .5); box-shadow: 0 0 32px rgb(243 139 168 / .12); }
+
+  .hero { margin: 22px 0 14px; padding: 24px; display: grid; grid-template-columns: 1fr 1.3fr; gap: 28px; align-items: end; }
   .hero .label { color: var(--subtext0); }
-  .hero .value { font-size: 52px; font-weight: 600; line-height: 1.1; margin: 4px 0; }
-  .hero .value small { font-size: 24px; font-weight: 500; color: var(--subtext0); }
+  .hero .value { font-size: 56px; font-weight: 650; line-height: 1.1; margin: 6px 0; letter-spacing: -.5px; }
+  .hero .value small { font-size: 24px; font-weight: 500; color: var(--subtext0); letter-spacing: 0; }
   .hero .note { color: var(--overlay0); font-size: 13px; }
+  .chart .label { color: var(--subtext0); font-size: 13px; display: flex; justify-content: space-between; gap: 12px; }
+  .chart svg { display: block; width: 100%; height: 110px; margin-top: 8px; overflow: visible; }
+  .chart rect.bar { fill: var(--red); transition: height .3s, y .3s; }
+  .chart rect.hit { fill: transparent; }
+  .chart rect.hit:hover + rect.bar, .chart rect.bar:hover { fill: #f5a3ba; }
+  .chart line { stroke: var(--surface1); stroke-width: 1; }
+  .chart .axis { display: flex; justify-content: space-between; color: var(--overlay0); font-size: 12px; margin-top: 4px; }
 
-  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 28px; }
-  .tile { padding: 16px; border-radius: 12px; background: var(--mantle); border: 1px solid var(--surface0); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 28px; }
+  .tile { padding: 16px 18px; }
   .tile .label { color: var(--subtext0); font-size: 13px; display: flex; align-items: center; gap: 8px; }
-  .tile .value { font-size: 30px; font-weight: 600; margin-top: 4px; }
+  .tile .value { font-size: 32px; font-weight: 650; margin-top: 4px; }
   .tile .note { color: var(--overlay0); font-size: 12px; }
+  .flash { animation: flash .9s ease-out; }
+  @keyframes flash { from { border-color: var(--tone, var(--surface1)); box-shadow: 0 0 22px -4px var(--tone, transparent); } }
 
-  .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--overlay0); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--tone, var(--overlay0)); }
   .good { --tone: var(--green); } .attack { --tone: var(--red); } .refused { --tone: var(--peach); }
   .info { --tone: var(--blue); } .fault { --tone: var(--yellow); }
-  .good .dot, .attack .dot, .refused .dot, .info .dot, .fault .dot,
-  .dot.good, .dot.attack, .dot.refused, .dot.info, .dot.fault { background: var(--tone); }
 
+  .feed { padding: 6px 0; overflow: hidden; }
   table { width: 100%; border-collapse: collapse; }
-  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--surface0); }
+  th, td { text-align: left; padding: 9px 16px; border-bottom: 1px solid var(--surface0); }
+  tbody tr:last-child td { border-bottom: 0; }
   th { color: var(--overlay0); font-weight: 500; font-size: 13px; }
   td.time, td.who { color: var(--subtext0); white-space: nowrap; }
-  td.detail { color: var(--subtext0); }
+  td.detail { color: var(--subtext0); white-space: nowrap; }
   .kind { display: inline-flex; align-items: center; gap: 8px; }
-  tbody tr.fresh { animation: fresh 1.5s ease-out; }
-  @keyframes fresh { from { background: var(--surface0); } to { background: transparent; } }
-  .empty { color: var(--overlay0); padding: 24px 12px; }
-  footer { margin-top: 24px; color: var(--overlay0); font-size: 12px; }
-  @media (prefers-reduced-motion: reduce) { tbody tr.fresh { animation: none; } }
+  .count {
+    display: inline-block; min-width: 2.2em; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600;
+    text-align: center; color: var(--crust); background: var(--tone, var(--overlay0));
+  }
+  .count[hidden] { display: none; }
+  .bump { animation: bump .35s ease-out; }
+  @keyframes bump { 40% { transform: scale(1.25); } }
+  tr.enter { animation: enter .5s ease-out; }
+  @keyframes enter {
+    from { opacity: 0; transform: translateY(-10px); background: var(--surface1); }
+    60% { opacity: 1; transform: none; }
+    to { background: transparent; }
+  }
+  .empty { color: var(--overlay0); padding: 28px 16px; }
+  footer { margin-top: 20px; color: var(--overlay0); font-size: 12px; }
+  @media (max-width: 760px) { .hero { grid-template-columns: 1fr; } .hero .value { font-size: 44px; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important; } }
 </style>
 </head>
 <body>
 <main>
   <header>
-    <h1>OTP Shield · события безопасности</h1>
-    <div id="status" class="status">подключение…</div>
+    <h1>OTP Shield <span>· события безопасности</span></h1>
+    <div id="status" class="status" role="status">подключение…</div>
   </header>
 
-  <section class="hero" aria-label="Сэкономлено">
-    <div class="label">Сэкономлено на SMS, не меньше</div>
-    <div class="value"><span id="saved">0</span> <small>сом</small></div>
-    <div class="note" id="saved-note">отклонённые запросы кода, за которые бизнес не заплатил оператору</div>
+  <section class="card hero">
+    <div>
+      <div class="label">Сэкономлено на SMS, не меньше</div>
+      <div class="value"><span id="saved">0,00</span> <small>сом</small></div>
+      <div class="note" id="saved-note">отклонённые запросы кода, за которые бизнес не заплатил оператору</div>
+    </div>
+    <div class="chart">
+      <div class="label"><span>Отбито запросов в секунду, последние 60 с</span><span id="chart-max"></span></div>
+      <svg id="chart" viewBox="0 0 600 110" preserveAspectRatio="none" aria-label="Отбито запросов в секунду"></svg>
+      <div class="axis"><span>−60 с</span><span>сейчас</span></div>
+    </div>
   </section>
 
-  <section class="tiles" aria-label="Счётчики с запуска">
-    <div class="tile attack">
+  <section class="tiles">
+    <div class="card tile attack" id="tile-brute">
       <div class="label"><span class="dot"></span>Отбито попыток перебора</div>
       <div class="value" id="t-brute">0</div>
       <div class="note">неверные коды и лимит verify по IP</div>
     </div>
-    <div class="tile refused">
+    <div class="card tile refused" id="tile-locked">
       <div class="label"><span class="dot"></span>Заблокировано номеров</div>
       <div class="value" id="t-locked">0</div>
       <div class="note">5 неверных кодов → блокировка на 15 мин</div>
     </div>
-    <div class="tile refused">
+    <div class="card tile refused" id="tile-refused">
       <div class="label"><span class="dot"></span>Отклонено SMS</div>
       <div class="value" id="t-refused">0</div>
       <div class="note">частые запросы, блокировка, лимит по IP</div>
     </div>
-    <div class="tile info">
+    <div class="card tile info" id="tile-sent">
       <div class="label"><span class="dot"></span>Выдано кодов</div>
       <div class="value" id="t-sent">0</div>
       <div class="note">успешных входов: <span id="t-ok">0</span></div>
     </div>
   </section>
 
-  <section aria-label="Лента событий">
-    <h2>Последние события</h2>
-    <table>
-      <thead><tr><th>Время</th><th>Событие</th><th>Номер</th><th>IP</th><th>Детали</th></tr></thead>
-      <tbody id="feed"><tr><td colspan="5" class="empty">Загрузка…</td></tr></tbody>
-    </table>
+  <section>
+    <h2>Лента событий</h2>
+    <div class="card feed">
+      <table>
+        <thead><tr><th>Время</th><th>Событие</th><th>Номер</th><th>IP</th><th>Детали</th></tr></thead>
+        <tbody id="feed"><tr><td colspan="5" class="empty">Загрузка…</td></tr></tbody>
+      </table>
+    </div>
   </section>
 
-  <footer>Счётчики — с запуска сервиса, лента — последние 50 событий. Номера и IP частично скрыты. Коды в журнал не пишутся.</footer>
+  <footer>Счётчики и график — с запуска сервиса. Одинаковые события подряд склеиваются в одну строку. Номера и IP частично скрыты, коды в журнал не пишутся.</footer>
 </main>
 
 <script>
-const POLL_MS = 2000;
-const FEED_ROWS = 50;
+const POLL_MS = 1000;
+const DRIP_MS = 60;       // feed animation tick; the queue drains in about a second
+const MAX_ROWS = 30;
+const CHART_SECONDS = 60;
+const ATTACK_HOLD_MS = 3000;
 
-// Event type -> label and tone (tone also shown as text, never color alone).
+// Event type -> label and tone (tone is also spelled out in the label, never color alone).
 const KINDS = {
   otp_sent:             ["Код выдан", "info"],
   verify_ok:            ["Успешный вход", "good"],
@@ -123,35 +168,82 @@ const KINDS = {
   send_rejected_ip:     ["SMS не отправлено: лимит по IP", "refused"],
   delivery_failed:      ["Сбой доставки", "fault"],
 };
+const REFUSED_SEND = ["send_rejected_locked", "send_rejected_rate", "send_rejected_ip"];
+const BLOCKED = ["verify_failed", "verify_rejected_ip", ...REFUSED_SEND]; // requests the defence turned away
 
 const num = new Intl.NumberFormat("ru-RU");
 const som = new Intl.NumberFormat("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const $ = (id) => document.getElementById(id);
-let lastTop = null;
+const sum = (c, keys) => keys.reduce((s, k) => s + (c[k] || 0), 0);
 
+let prevCounts = null;
+let price = 0;            // som per refused send, derived from /stats
+let lastAttackAt = 0;
+const queue = [];         // events (or {type, extra: n} for events /events no longer holds) waiting to drip in
+let groups = [];          // feed rows, newest first: {type, count, last, saved, tr, cells}
+const buckets = new Array(CHART_SECONDS).fill(0);
+
+// ---------- formatting ----------
 function maskMsisdn(m) {
-  return m && m.length === 12 ? m.slice(0, 6) + "***" + m.slice(9) : (m || "—");
+  return m && m.length === 12 ? m.slice(0, 6) + "***" + m.slice(9) : "—";
 }
-
 function maskIp(ip) {
   if (!ip) return "—";
   if (ip.startsWith("127.") || ip === "::1") return ip; // local demo: nothing to hide
   const v4 = ip.split(".");
-  if (v4.length === 4) return v4.slice(0, 3).join(".") + ".x";
-  return ip.split(":").slice(0, 3).join(":") + ":…";
+  return v4.length === 4 ? v4.slice(0, 3).join(".") + ".x" : ip.split(":").slice(0, 3).join(":") + ":…";
 }
+const time = (ts) => (ts ? ts.slice(11, 19) : "");
 
-function time(ts) {
-  return ts ? ts.slice(11, 19) : "";
-}
-
-function detail(e) {
+function detail(g) {
+  const e = g.last;
+  if (g.saved > 0) return `+${som.format(g.saved)} сом`;
+  if (!e) return "";
   if (e.type === "verify_failed" && e.fails) return `ошибка ${e.fails} из 5`;
   if (e.type === "number_locked" && e.until) return `до ${time(e.until)}`;
-  if (e.saved_som) return `+${som.format(e.saved_som)} сом`;
   return "";
 }
 
+function restart(el, cls) {
+  el.classList.remove(cls);
+  void el.offsetWidth; // reflow, so the animation plays again
+  el.classList.add(cls);
+}
+
+// ---------- animated numbers ----------
+const shown = new Map();
+function tween(el, target, fmt, tile) {
+  const from = shown.has(el) ? shown.get(el) : 0;
+  if (from === target) return;
+  shown.set(el, target);
+  if (tile && target > from) restart(tile, "flash");
+  cancelAnimationFrame(el._raf);
+  const t0 = performance.now();
+  const step = (t) => {
+    const p = Math.min(1, Math.max(0, (t - t0) / 700)); // rAF time can precede t0
+    el.textContent = fmt(from + (target - from) * (1 - Math.pow(1 - p, 3)));
+    if (p < 1) el._raf = requestAnimationFrame(step);
+  };
+  el._raf = requestAnimationFrame(step);
+}
+const int = (v) => num.format(Math.round(v));
+
+function renderStats(s) {
+  const c = s.counts || {};
+  const refused = sum(c, REFUSED_SEND);
+  price = refused ? s.saved_som / refused : price;
+  tween($("saved"), s.saved_som || 0, (v) => som.format(v), $("saved").closest(".hero"));
+  tween($("t-brute"), sum(c, ["verify_failed", "verify_rejected_ip"]), int, $("tile-brute"));
+  tween($("t-locked"), c.number_locked || 0, int, $("tile-locked"));
+  tween($("t-refused"), refused, int, $("tile-refused"));
+  tween($("t-sent"), c.otp_sent || 0, int, $("tile-sent"));
+  tween($("t-ok"), c.verify_ok || 0, int);
+  $("saved-note").textContent = refused
+    ? `${num.format(refused)} SMS не отправлено × ${som.format(price)} сом`
+    : "отклонённые запросы кода, за которые бизнес не заплатил оператору";
+}
+
+// ---------- feed ----------
 function cell(text, cls) {
   const td = document.createElement("td");
   if (cls) td.className = cls;
@@ -159,66 +251,173 @@ function cell(text, cls) {
   return td;
 }
 
-function row(e, fresh) {
-  const [label, tone] = KINDS[e.type] || [e.type, ""];
+function newGroup(type) {
+  const [label, tone] = KINDS[type] || [type, ""];
   const tr = document.createElement("tr");
-  if (fresh) tr.className = "fresh";
-  tr.append(cell(time(e.ts), "time"));
   const kind = document.createElement("td");
   const span = document.createElement("span");
   span.className = "kind " + tone;
   const dot = document.createElement("span");
   dot.className = "dot";
-  span.append(dot, label);
+  const count = document.createElement("span");
+  count.className = "count";
+  span.append(dot, label, count);
   kind.append(span);
-  tr.append(kind, cell(maskMsisdn(e.msisdn), "who"), cell(maskIp(e.ip), "who"), cell(detail(e), "detail"));
-  return tr;
+  const cells = { time: cell("", "time"), count, msisdn: cell("", "who"), ip: cell("", "who"), detail: cell("", "detail") };
+  tr.append(cells.time, kind, cells.msisdn, cells.ip, cells.detail);
+  return { type, count: 0, last: null, ts: null, saved: 0, tr, cells };
 }
 
-function renderStats(s) {
-  const c = s.counts || {};
-  const n = (k) => c[k] || 0;
-  $("saved").textContent = som.format(s.saved_som || 0);
-  $("t-brute").textContent = num.format(n("verify_failed") + n("verify_rejected_ip"));
-  $("t-locked").textContent = num.format(n("number_locked"));
-  $("t-refused").textContent = num.format(n("send_rejected_locked") + n("send_rejected_rate") + n("send_rejected_ip"));
-  $("t-sent").textContent = num.format(n("otp_sent"));
-  $("t-ok").textContent = num.format(n("verify_ok"));
+function paint(g) {
+  const c = g.cells;
+  c.time.textContent = time(g.ts);
+  c.count.hidden = g.count < 2;
+  c.count.textContent = "×" + num.format(g.count);
+  // A row made only of overflow counts has no details to show.
+  c.msisdn.textContent = g.last ? maskMsisdn(g.last.msisdn) : "";
+  c.ip.textContent = g.last ? maskIp(g.last.ip) : "";
+  c.detail.textContent = detail(g);
 }
 
-function renderFeed(events) {
+function add(item, animate) {
   const feed = $("feed");
-  const shown = events.slice(0, FEED_ROWS);
-  if (!shown.length) {
-    const tr = document.createElement("tr");
-    tr.append(cell("Событий пока нет: запросите код через /otp/send или запустите scripts/attack.py", "empty"));
-    tr.firstChild.colSpan = 5;
-    feed.replaceChildren(tr);
-    return;
+  let g = groups[0];
+  const fresh = !g || g.type !== item.type;
+  if (fresh) {
+    if (!groups.length) feed.replaceChildren();
+    g = newGroup(item.type);
+    groups.unshift(g);
+    feed.prepend(g.tr);
+    if (animate) g.tr.classList.add("enter");
+    while (groups.length > MAX_ROWS) groups.pop().tr.remove();
   }
-  // Rows newer than the previous top get a short highlight (skipped on the first render).
-  const top = JSON.stringify(shown[0]);
-  let fresh = lastTop === null ? 0 : shown.findIndex((e) => JSON.stringify(e) === lastTop);
-  if (fresh < 0) fresh = shown.length;
-  lastTop = top;
-  feed.replaceChildren(...shown.map((e, i) => row(e, i < fresh)));
+  const real = !item.extra;
+  const unknown = real ? item.more || 0 : item.extra; // events known only as a count
+  g.count += (real ? 1 : 0) + unknown;
+  if (real) g.last = item;
+  g.ts = item.ts || g.ts;
+  g.saved += (real ? item.saved_som || 0 : 0) + (REFUSED_SEND.includes(item.type) ? unknown * price : 0);
+  paint(g);
+  if (animate && !fresh && g.count > 1) restart(g.cells.count, "bump");
+}
+
+function resetFeed(events) {
+  groups = [];
+  queue.length = 0;
+  const feed = $("feed");
+  feed.replaceChildren();
+  events.slice().reverse().forEach((e) => add(e, false));
+  if (!groups.length) {
+    const tr = document.createElement("tr");
+    const td = cell("Событий пока нет: запросите код через /otp/send или запустите scripts/attack.py", "empty");
+    td.colSpan = 5;
+    tr.append(td);
+    feed.append(tr);
+  }
+}
+
+setInterval(() => {
+  // Drain the queue in about a second whatever its size: rows stream in instead of jumping.
+  let k = Math.max(1, Math.ceil(queue.length / 15));
+  while (k-- > 0 && queue.length) add(queue.shift(), true);
+}, DRIP_MS);
+
+// ---------- chart: refused requests per second ----------
+// One bar per poll (POLL_MS = 1 s): no empty gaps when a poll lands late in its second.
+function record(n) {
+  buckets.shift();
+  buckets.push(n);
+  if (n > 0) lastAttackAt = Date.now();
+}
+
+function renderChart() {
+  const svg = $("chart");
+  const max = Math.max(...buckets);
+  const W = 600 / CHART_SECONDS, H = 110;
+  const ns = "http://www.w3.org/2000/svg";
+  const nodes = [];
+  buckets.forEach((v, i) => {
+    const h = max ? Math.max(v ? 3 : 0, (v / max) * (H - 4)) : 0;
+    const hit = document.createElementNS(ns, "rect");
+    hit.setAttribute("class", "hit");
+    hit.setAttribute("x", i * W); hit.setAttribute("y", 0);
+    hit.setAttribute("width", W); hit.setAttribute("height", H);
+    const bar = document.createElementNS(ns, "rect");
+    bar.setAttribute("class", "bar");
+    bar.setAttribute("x", i * W + 1); bar.setAttribute("y", H - h);
+    bar.setAttribute("width", W - 2); bar.setAttribute("height", h);
+    bar.setAttribute("rx", 2);
+    const title = document.createElementNS(ns, "title");
+    const ago = CHART_SECONDS - 1 - i;
+    title.textContent = `${num.format(v)} отбито · ${ago ? ago + " с назад" : "сейчас"}`;
+    hit.append(title.cloneNode(true));
+    bar.append(title);
+    nodes.push(hit, bar);
+  });
+  const base = document.createElementNS(ns, "line");
+  base.setAttribute("x1", 0); base.setAttribute("x2", 600);
+  base.setAttribute("y1", H); base.setAttribute("y2", H);
+  svg.replaceChildren(base, ...nodes);
+  $("chart-max").textContent = max ? `пик ${num.format(max)}/с` : "";
+}
+
+// ---------- status ----------
+function setStatus(state, text) {
+  $("status").className = "status " + state;
+  $("status").textContent = text;
+  document.body.classList.toggle("attack", state === "attack");
+}
+
+// ---------- polling ----------
+async function get(path) {
+  const r = await fetch(path, { cache: "no-store" });
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
 }
 
 async function poll() {
   try {
-    const [stats, events] = await Promise.all(
-      ["stats", "events"].map((p) => fetch("/" + p, { cache: "no-store" }).then((r) => {
-        if (!r.ok) throw new Error(r.status);
-        return r.json();
-      }))
-    );
+    // Events first, then stats: stats may only be ahead, and the extra is counted below.
+    const events = await get("/events");
+    const stats = await get("/stats");
+    const c = stats.counts || {};
+    const restarted = prevCounts && Object.keys(prevCounts).some((k) => (c[k] || 0) < prevCounts[k]);
+    if (!prevCounts || restarted) {
+      resetFeed(events);
+    } else {
+      const delta = {};
+      let total = 0;
+      for (const k of Object.keys(c)) {
+        const d = c[k] - (prevCounts[k] || 0);
+        if (d > 0) { delta[k] = d; total += d; }
+      }
+      const fresh = events.slice(0, Math.min(total, events.length)).reverse();
+      const seen = {};
+      const first = {};
+      fresh.forEach((e) => { seen[e.type] = (seen[e.type] || 0) + 1; first[e.type] ??= e; });
+      // A burst bigger than /events keeps: the missing events are counted into the oldest
+      // shown event of the same type, or into a row of their own without details.
+      const lead = [];
+      for (const [k, d] of Object.entries(delta)) {
+        const miss = d - (seen[k] || 0);
+        if (miss <= 0) continue;
+        if (first[k]) first[k].more = miss;
+        else lead.push({ type: k, extra: miss, ts: fresh.length ? fresh[0].ts : null });
+      }
+      queue.push(...lead, ...fresh);
+      record(sum(delta, BLOCKED));
+    }
+    prevCounts = c;
     renderStats(stats);
-    renderFeed(events);
-    $("status").className = "status";
-    $("status").textContent = "обновлено " + new Date().toLocaleTimeString("ru-RU");
+    renderChart();
+    if (Date.now() - lastAttackAt < ATTACK_HOLD_MS) {
+      const rate = Math.round((buckets[CHART_SECONDS - 1] + buckets[CHART_SECONDS - 2] + buckets[CHART_SECONDS - 3]) / 3);
+      setStatus("attack", `Атака отражается · ${num.format(rate)} запросов/с`);
+    } else {
+      setStatus("", "Защита активна · " + new Date().toLocaleTimeString("ru-RU"));
+    }
   } catch {
-    $("status").className = "status down";
-    $("status").textContent = "нет связи с сервером, повтор через 2 с";
+    setStatus("down", "Нет связи с сервером, повтор…");
   }
 }
 
