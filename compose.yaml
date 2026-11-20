@@ -1,4 +1,6 @@
 # Bonus: backend + Redis with TTL. Run from the repo root: docker compose up --build
+name: otp-service
+
 services:
   redis:
     image: redis:7-alpine

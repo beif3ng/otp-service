@@ -1,0 +1,33 @@
+# Prod only (VM, demo): docker compose -f compose.yaml -f compose.prod.yaml up -d --build
+# Needs DOMAIN in .env next to this file.
+services:
+  backend:
+    ports: !reset []  # reachable only through Caddy
+    # Behind Caddy request.client.host is Caddy: take the IP from X-Forwarded-For, which
+    # Caddy overwrites. Safe because only Caddy can reach the backend.
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1",
+              "--proxy-headers", "--forwarded-allow-ips", "*"]
+    restart: unless-stopped
+
+  redis:
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:

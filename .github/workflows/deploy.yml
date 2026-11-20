@@ -1,0 +1,27 @@
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # Skipped without the VM: repo variables VM_HOST, VM_USER; secret VM_SSH_KEY.
+    if: vars.VM_HOST != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pull and rebuild on the VM
+        env:
+          SSH_KEY: ${{ secrets.VM_SSH_KEY }}
+          VM_HOST: ${{ vars.VM_HOST }}
+          VM_USER: ${{ vars.VM_USER }}
+        run: |
+          install -m 600 /dev/null key
+          printf '%s\n' "$SSH_KEY" > key
+          ssh -i key -o StrictHostKeyChecking=accept-new "$VM_USER@$VM_HOST" \
+            'cd ~/otp-service && git pull --ff-only && docker compose -f compose.yaml -f compose.prod.yaml up -d --build'

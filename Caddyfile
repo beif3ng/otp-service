@@ -1,0 +1,8 @@
+# Prod only (VM): HTTPS for $DOMAIN in front of the backend.
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy backend:8000 {
+		# Client IP for the per-IP limits comes from Caddy, never from the client's own header.
+		header_up X-Forwarded-For {remote_host}
+	}
+}

@@ -37,6 +37,9 @@
 ```
 README.md               запуск одной командой, формат доставки кода, наши трактовки ТЗ, что сделано / не успели
 compose.yaml            бонус: backend + Redis
+compose.prod.yaml       только VM (демо): + Caddy с HTTPS, backend без открытого порта
+Caddyfile               только VM: прокси на backend, X-Forwarded-For = реальный IP клиента
+.github/workflows/deploy.yml  push в main → SSH на VM → git pull + compose up
 backend/
   app/main.py           FastAPI app, подключение роутеров — без prefix /api, пути ровно как в ТЗ
   app/config.py         тайминги и лимиты из env, дефолты = ТЗ
@@ -57,6 +60,7 @@ backend/
 | `requirements.txt` | `backend/` | `uv export --no-hashes --no-dev -o requirements.txt` |
 | Запуск как у жюри | корень | команда из `README.md`; проверяем перед каждым push в `main` |
 | Docker (бонус) | корень | `docker compose up --build` |
+| Деплой (демо) | — | push в `main` → https://otp.beifeng.dev; на VM: `~/otp-service`, `docker compose -f compose.yaml -f compose.prod.yaml up -d --build` |
 | Слайды | `../hackathon/pitch/` (старый репо `beif3ng/hackathon`, не этот) | правим текст в `build.js`, `npm run build` → `pitch.pptx` → импорт в Google Slides |
 | Проверка дашборда агентом | любая | `agent-browser open http://localhost:8000/dashboard`, затем `snapshot`, `errors`, `close` |
 
