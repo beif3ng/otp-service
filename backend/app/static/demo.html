@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- OTP Shield mark from assets/logo-latte.svg, inline: assets/ is not in the Docker image -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='64 32 384 448'%3E%3Cdefs%3E%3Cmask id='m'%3E%3Crect width='512' height='512' fill='%23fff'/%3E%3Ccircle cx='176' cy='224' r='32'/%3E%3Ccircle cx='176' cy='312' r='32'/%3E%3Ccircle cx='256' cy='224' r='32'/%3E%3Ccircle cx='256' cy='312' r='32'/%3E%3Ccircle cx='336' cy='224' r='32'/%3E%3Ccircle cx='336' cy='312' r='32'/%3E%3C/mask%3E%3C/defs%3E%3Cpath d='M256 48 L432 112 V240 C432 352 360 424 256 464 C152 424 80 352 80 240 V112 Z' fill='%238839ef' mask='url%28%23m%29'/%3E%3C/svg%3E">
+<title>Barni & Go — вход</title>
+<style>
+  /* Catppuccin Latte. Subtext 0 on Latte base is 4.4:1, so labels use Subtext 1. */
+  :root {
+    --crust: #dce0e8; --mantle: #e6e9ef; --base: #eff1f5; --surface0: #ccd0da; --overlay0: #9ca0b0;
+    --subtext1: #5c5f77; --text: #4c4f69;
+    --mauve: #8839ef; --green: #40a02b; --red: #d20f39; --peach: #fe640b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--mantle); color: var(--text);
+    font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-variant-numeric: tabular-nums;
+  }
+  main { max-width: 440px; margin: 0 auto; padding: 28px 16px 48px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 18px; }
+  .brand { font-size: 26px; font-weight: 750; letter-spacing: -.5px; }
+  .brand span { color: var(--mauve); }
+  .city { color: var(--subtext1); font-size: 14px; }
+  .card { background: var(--base); border: 1px solid var(--surface0); border-radius: 16px; padding: 22px; }
+  .cart { display: flex; justify-content: space-between; color: var(--subtext1); font-size: 14px;
+          padding-bottom: 14px; margin-bottom: 18px; border-bottom: 1px solid var(--surface0); }
+  .cart b { color: var(--text); }
+  h1 { margin: 0 0 6px; font-size: 21px; }
+  p { margin: 0 0 16px; }
+  .hint { color: var(--subtext1); font-size: 14px; }
+  label { display: block; font-size: 14px; color: var(--subtext1); margin-bottom: 6px; }
+  .field { display: flex; align-items: center; border: 1.5px solid var(--surface0); border-radius: 12px;
+           background: var(--base); padding: 0 14px; }
+  .field:focus-within { border-color: var(--mauve); }
+  .field span { color: var(--subtext1); margin-right: 6px; }
+  input { flex: 1; border: 0; outline: 0; background: transparent; color: var(--text);
+          font: inherit; font-size: 20px; padding: 12px 0; min-width: 0; }
+  input::placeholder { color: var(--subtext1); opacity: 1; }
+  #code { letter-spacing: 10px; font-size: 26px; }
+  button { font: inherit; border: 0; border-radius: 12px; padding: 13px 16px; cursor: pointer; width: 100%;
+           font-weight: 600; margin-top: 14px; background: var(--mauve); color: var(--base); }
+  button.ghost { background: transparent; color: var(--mauve); border: 1.5px solid var(--surface0); }
+  button:disabled { opacity: .55; cursor: default; }
+  .msg { min-height: 22px; margin-top: 12px; font-size: 14px; }
+  .msg.err { color: var(--red); }
+  .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 10px; font-size: 14px; }
+  .linkbtn { background: none; border: 0; padding: 0; margin: 0; width: auto; color: var(--mauve); font-weight: 600; }
+  .ok { font-size: 44px; color: var(--green); line-height: 1; margin-bottom: 8px; }
+  [hidden] { display: none !important; }
+  a { color: var(--mauve); }
+  footer { margin-top: 14px; text-align: center; color: var(--subtext1); font-size: 13px; }
+
+  details { margin-top: 18px; }
+  summary { cursor: pointer; color: var(--subtext1); font-size: 14px; }
+  .jury { margin-top: 10px; font-size: 13px; }
+  .jury .links { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
+  .jury button { margin-top: 4px; font-size: 14px; padding: 10px; }
+  #race { margin: 8px 0; font-weight: 600; min-height: 18px; }
+  #log { list-style: none; margin: 8px 0 0; padding: 0; font: 12.5px/1.5 ui-monospace, Consolas, monospace;
+         max-height: 260px; overflow: auto; background: var(--base); border: 1px solid var(--surface0); border-radius: 10px; }
+  #log li { padding: 4px 10px; border-bottom: 1px solid var(--mantle); display: flex; gap: 8px; }
+  #log li::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; background: var(--overlay0); }
+  #log li.s2::before { background: var(--green); }
+  #log li.s4::before { background: var(--peach); }
+  #log li.s5::before, #log li.s0::before { background: var(--red); }
+  #log .t { color: var(--subtext1); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="brand">Barni <span>&amp;</span> Go</div>
+    <div class="city">Доставка по Бишкеку</div>
+  </header>
+
+  <div class="card">
+    <div class="cart"><span>Корзина: самса ×4, айран ×2</span><b>640 сом</b></div>
+
+    <form id="phoneStep">
+      <h1>Войдите, чтобы оформить заказ</h1>
+      <p class="hint">Пришлём код подтверждения на номер телефона.</p>
+      <label for="phone">Номер телефона</label>
+      <div class="field"><span>+996</span>
+        <input id="phone" inputmode="numeric" autocomplete="tel-national" required>
+      </div>
+      <button id="sendBtn">Получить код</button>
+      <div class="msg err" id="phoneMsg" role="alert"></div>
+    </form>
+
+    <form id="codeStep" hidden>
+      <h1>Введите код</h1>
+      <p class="hint">Отправили 6 цифр на <b id="shownPhone"></b>. Привяжите номер в Telegram-боте
+        <a href="https://t.me/otp_shield_bot" target="_blank" rel="noopener">@otp_shield_bot</a> — код придёт туда.
+        Без бота код лежит в <code>outbox/sms.jsonl</code>.</p>
+      <div class="field"><input id="code" inputmode="numeric" autocomplete="one-time-code" placeholder="••••••" maxlength="6" required></div>
+      <button id="verifyBtn">Войти</button>
+      <div class="msg err" id="codeMsg" role="alert"></div>
+      <div class="row">
+        <span class="hint" id="ttl"></span>
+        <button type="button" class="linkbtn" id="resendBtn">Отправить ещё раз</button>
+      </div>
+      <div class="row"><button type="button" class="linkbtn" id="backBtn">← Другой номер</button></div>
+    </form>
+
+    <div id="doneStep" hidden>
+      <div class="ok">✓</div>
+      <h1>Вы вошли</h1>
+      <p class="hint">Номер <b id="donePhone"></b> подтверждён. Заказ на 640 сом можно оформлять.</p>
+      <button type="button" class="ghost" id="logoutBtn">Выйти</button>
+    </div>
+  </div>
+
+  <details>
+    <summary>Для жюри: запросы к API</summary>
+    <div class="jury">
+      <div class="links">
+        <a href="/dashboard" target="_blank">Дашборд безопасности</a>
+        <a href="/docs" target="_blank">Swagger</a>
+      </div>
+      <div class="hint">Отправляет код из поля 20 раз одновременно: верный код принимается ровно один раз,
+        уже использованный — ни разу. Лимит — 20 verify в минуту с одного IP, поэтому для 200 × 1 · 401 × 19
+        жмите вместо «Войти», на свежем коде.</div>
+      <button type="button" class="ghost" id="raceBtn" disabled>Войти этим кодом ×20 параллельно</button>
+      <div id="race"></div>
+      <ol id="log"></ol>
+    </div>
+  </details>
+
+  <footer>Вход защищает OTP Shield</footer>
+</main>
+
+<script>
+// Messages by the API's "detail"; one per Result(...) in app/otp.py plus the handlers in app/main.py.
+const MESSAGES = {
+  "invalid msisdn": "Номер — 9 цифр после +996.",
+  "invalid msisdn or code": "Код — 6 цифр.",
+  "invalid request": "Некорректный запрос.",
+  "number is locked": "Слишком много неверных кодов: номер заблокирован на 15 минут.",
+  "too many requests": "Код уже отправлен. Новый можно запросить позже.",
+  "too many requests from this ip": "Слишком много запросов с вашего адреса. Подождите минуту.",
+  "sms delivery failed": "Не удалось отправить SMS. Попробуйте ещё раз.",
+  "storage unavailable": "Сервис временно недоступен.",
+  "no active code": "Код уже использован или не запрашивался. Запросите новый.",
+  "code expired": "Код истёк. Запросите новый.",
+  "invalid code": "Неверный код.",
+};
+const CODE_TTL = 120; // s, the default OTP_TTL; only for the countdown, the server decides
+
+const $ = (id) => document.getElementById(id);
+let msisdn = "";
+let lastCode = "";
+let expiresAt = 0;   // ms, countdown of the current code
+let resendAt = 0;    // ms, from Retry-After
+let lockedAt = 0;    // ms, phone step: lock from Retry-After
+
+const pretty = (m) => `+996 ${m.slice(3, 6)} ${m.slice(6, 9)} ${m.slice(9)}`;
+const mmss = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
+const say = (el, detail) => { $(el).textContent = detail ? (MESSAGES[detail] || detail) : ""; };
+
+function show(step) {
+  for (const s of ["phoneStep", "codeStep", "doneStep"]) $(s).hidden = s !== step;
+  const focus = { phoneStep: "phone", codeStep: "code" }[step];
+  if (focus) $(focus).focus();
+}
+
+function log(path, body, status, detail) {
+  const li = document.createElement("li");
+  li.className = "s" + String(status)[0];
+  const time = new Date().toLocaleTimeString("ru-RU");
+  li.innerHTML = `<span class="t"></span><span></span>`;
+  li.children[0].textContent = time;
+  li.children[1].textContent = `${path} ${JSON.stringify(body)} → ${status || "сеть"} ${detail || ""}`;
+  $("log").prepend(li);
+}
+
+async function api(path, body, quiet = false) {
+  try {
+    const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const data = await r.json().catch(() => ({}));
+    if (!quiet) log(path, body, r.status, data.detail);
+    return { status: r.status, detail: data.detail, retry: Number(r.headers.get("Retry-After")) || 0 };
+  } catch {
+    if (!quiet) log(path, body, 0, "");
+    return { status: 0, detail: "storage unavailable", retry: 0 };
+  }
+}
+
+async function send() {
+  const r = await api("/otp/send", { msisdn });
+  if (r.status === 200) {
+    expiresAt = Date.now() + CODE_TTL * 1000;
+    resendAt = 0;
+    say("codeMsg", "");
+    $("code").value = "";
+  } else if (r.status === 429 && r.detail === "too many requests") {
+    resendAt = Date.now() + r.retry * 1000; // a rejected send keeps the current code valid
+  } else if (r.status === 423) {
+    lockedAt = Date.now() + r.retry * 1000;
+  }
+  return r;
+}
+
+$("phoneStep").onsubmit = async (e) => {
+  e.preventDefault();
+  let digits = $("phone").value.replace(/\D/g, "");
+  if (digits.length === 12 && digits.startsWith("996")) digits = digits.slice(3);
+  if (digits.length !== 9) return say("phoneMsg", "invalid msisdn");
+  msisdn = "996" + digits;
+  lockedAt = 0;
+  $("sendBtn").disabled = true;
+  const r = await send();
+  $("sendBtn").disabled = false;
+  if (r.status === 200 || (r.status === 429 && r.detail === "too many requests")) {
+    say("phoneMsg", "");
+    $("shownPhone").textContent = $("donePhone").textContent = pretty(msisdn);
+    if (r.status === 429) say("codeMsg", r.detail);
+    show("codeStep");
+  } else {
+    say("phoneMsg", r.detail);
+  }
+};
+
+async function verify(code) {
+  const r = await api("/otp/verify", { msisdn, code });
+  if (r.status === 200) return show("doneStep");
+  say("codeMsg", r.detail);
+  $("code").value = "";
+  if (r.status === 423) expiresAt = 0; // the lock voids the code
+}
+
+$("codeStep").onsubmit = (e) => {
+  e.preventDefault();
+  lastCode = $("code").value;
+  updateRace();
+  verify(lastCode);
+};
+$("code").oninput = () => {
+  $("code").value = $("code").value.replace(/\D/g, "").slice(0, 6);
+  if ($("code").value.length === 6) lastCode = $("code").value;
+  updateRace();
+};
+$("resendBtn").onclick = async () => {
+  const r = await send();
+  say("codeMsg", r.status === 200 ? "" : r.detail);
+};
+$("backBtn").onclick = () => show("phoneStep");
+$("logoutBtn").onclick = () => { $("code").value = ""; say("codeMsg", ""); show("phoneStep"); };
+
+function updateRace() {
+  $("raceBtn").disabled = !(msisdn && lastCode.length === 6);
+  $("raceBtn").textContent = lastCode ? `Войти кодом ${lastCode} ×20 параллельно` : "Войти этим кодом ×20 параллельно";
+}
+
+$("raceBtn").onclick = async () => {
+  $("raceBtn").disabled = true;
+  $("race").textContent = "Отправляем 20 запросов…";
+  const body = { msisdn, code: lastCode };
+  const results = await Promise.all(Array.from({ length: 20 }, () => api("/otp/verify", body, true)));
+  const counts = {};
+  for (const r of results) {
+    counts[r.status] = (counts[r.status] || 0) + 1;
+    log("/otp/verify", body, r.status, r.detail);
+  }
+  $("race").textContent = Object.entries(counts).map(([s, n]) => `${s || "сеть"} × ${n}`).join(" · ");
+  updateRace();
+  if (counts[200]) show("doneStep");
+};
+
+setInterval(() => {
+  const now = Date.now();
+  $("ttl").textContent = expiresAt > now ? `Код действует ${mmss(expiresAt - now)}` : expiresAt ? "Код истёк" : "";
+  const wait = resendAt > now;
+  $("resendBtn").disabled = wait;
+  $("resendBtn").textContent = wait ? `Отправить ещё раз через ${mmss(resendAt - now)}` : "Отправить ещё раз";
+  if (lockedAt > now) $("phoneMsg").textContent = `${MESSAGES["number is locked"]} Осталось ${mmss(lockedAt - now)}.`;
+  else if (lockedAt) { lockedAt = 0; say("phoneMsg", ""); }
+}, 250);
+</script>
+</body>
+</html>

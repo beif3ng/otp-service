@@ -20,6 +20,12 @@ def dashboard() -> FileResponse:
     return FileResponse(STATIC / "dashboard.html")
 
 
+@app.get("/demo", include_in_schema=False)
+def demo() -> FileResponse:
+    """Product demo: login to a made-up delivery service via /otp/send and /otp/verify."""
+    return FileResponse(STATIC / "demo.html")
+
+
 @app.exception_handler(StoreUnavailable)
 def store_unavailable(_: Request, exc: StoreUnavailable) -> JSONResponse:
     """Redis is down: a clear 503 instead of a 500 traceback."""
