@@ -132,7 +132,10 @@ def poll_updates(bot: Bot, bindings: Bindings) -> None:
         for update in updates:
             offset = update["update_id"] + 1
             if "message" in update:
-                handle(bot, bindings, update["message"])
+                try:
+                    handle(bot, bindings, update["message"])
+                except Exception as e:  # one odd update must not stop the bot for everyone
+                    print(f"telegram update skipped: {type(e).__name__}", flush=True)
 
 
 def deliver(bot: Bot, bindings: Bindings, line: str) -> None:
@@ -146,7 +149,7 @@ def deliver(bot: Bot, bindings: Bindings, line: str) -> None:
         return
     bot.say(
         chat_id,
-        f"Код входа: <code>{code}</code>\nДействует 2 минуты. Никому его не сообщайте.",
+        f"Код входа: <code>{code}</code>\nДействует {config.OTP_TTL / 60:g} мин. Никому его не сообщайте.",
         protect_content=True,
     )
     print(f"delivered to telegram: {masked(msisdn)}", flush=True)  # never the code
@@ -170,7 +173,7 @@ def tail_outbox(bot: Bot, bindings: Bindings, path: Path) -> None:
             chunk = f.read()
         complete = chunk[: chunk.rfind(b"\n") + 1]  # skip a line still being written
         pos += len(complete)
-        for line in complete.decode("utf-8").splitlines():
+        for line in complete.decode("utf-8", errors="replace").splitlines():
             deliver(bot, bindings, line)
 
 
