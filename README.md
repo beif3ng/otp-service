@@ -84,6 +84,7 @@ Windows (PowerShell): то же, но `python -m venv .venv; .venv\Scripts\Activ
 | Сценарии в формате жюри с пошаговым логом, подменённые часы | `uv run python scripts/scenarios.py` |
 | То же на реальном uvicorn и реальном времени (~3 мин) | `uv run python scripts/scenarios.py --live` |
 | Атака на запущенный сервер | `uv run python scripts/attack.py` |
+| Случайные атаки в цикле до Ctrl+C (живой дашборд на демо) | `uv run python scripts/attack_loop.py` |
 
 `attack.py` — три атаки по 1000 запросов на свежие синтетические номера:
 
