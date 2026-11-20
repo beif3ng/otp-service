@@ -31,6 +31,17 @@
 - Время — только через одну функцию `now()` в `app/otp.py`; в тестах её подменяем, `sleep` на 120 с не пишем.
 - LLM не используем: в ТЗ 6 он не нужен, а ключа у жюри нет.
 - Дашборд (бонус) и `/demo` — статические `app/static/dashboard.html`, `app/static/demo.html` без сборки, его отдаёт FastAPI. React и Node не нужны.
+- Цвета UI — роли из официального Catppuccin style guide (github.com/catppuccin/catppuccin, `docs/style-guide.md`), hex — из `catppuccin/palette` (`palette.json`); по памяти не берём. Mocha — `/dashboard`, бот; Latte — `/demo`, слайды. Текст на фоне — не ниже 4,5:1 (WCAG AA), проверка — `npx impeccable detect <url>`. Overlay 1 («Subtle» в руководстве) на `base` Mocha даёт 4,4:1 — для текста не берём.
+
+  | Роль | Mocha | Latte |
+  |---|---|---|
+  | Основной текст (Text) | `#cdd6f4` | `#4c4f69` |
+  | Подписи, labels (Subtext 0 / 1) | `#a6adc8` / `#bac2de` | `#6c6f85` / `#5c5f77` |
+  | Текст на акценте (Base) | `#1e1e2e` | `#eff1f5` |
+  | Фон: base / mantle / crust | `#1e1e2e` / `#181825` / `#11111b` | `#eff1f5` / `#e6e9ef` / `#dce0e8` |
+  | Поверхности, рамки (Surface 0) | `#313244` | `#ccd0da` |
+  | Overlay 0 / 1 / 2 — только фон, точки, рамки, не текст | `#6c7086` / `#7f849c` / `#9399b2` | `#9ca0b0` / `#8c8fa1` / `#7c7f93` |
+  | Акцент / ок / атака / предупреждение (mauve / green / red / peach) | `#cba6f7` / `#a6e3a1` / `#f38ba8` / `#fab387` | `#8839ef` / `#40a02b` / `#d20f39` / `#fe640b` |
 - `OTP_SECRET` (ключ HMAC) — из env; не задан → генерируется при старте (`secrets.token_bytes(32)`).
 
 ## Структура
