@@ -140,20 +140,16 @@ def _next_send_at(n: Number) -> float:
     last_t, last_ord = n.sends[-1]
     at = last_t + config.SEND_DELAYS[min(last_ord, len(config.SEND_DELAYS)) - 1]
     if len(n.sends) >= config.SEND_MAX:
-        at = max(at, n.sends[len(n.sends) - config.SEND_MAX][0] + config.SEND_WINDOW)
+        at = max(at, n.sends[-config.SEND_MAX][0] + config.SEND_WINDOW)
     return at
 
 
-def _ip_send_retry(ip: str, t: float) -> float | None:
-    """Seconds until the IP may send again, None if allowed or the limit is off."""
-    if not config.SEND_IP_MAX:
-        return None
-    sends = _store.timestamps("ipsend:" + ip)
-    while sends and sends[0] <= t - config.SEND_IP_WINDOW:
-        sends.popleft()
-    if len(sends) < config.SEND_IP_MAX:
-        return None
-    return sends[0] + config.SEND_IP_WINDOW - t
+def _recent(key: str, t: float, window: float) -> deque[float]:
+    """Timestamps of the key inside the sliding window (t - window, t]."""
+    times = _store.timestamps(key)
+    while times and times[0] <= t - window:
+        times.popleft()
+    return times
 
 
 def _rejected_send(t: float, kind: str, msisdn: str, ip: str) -> None:
@@ -183,10 +179,10 @@ def _send(msisdn: str, ip: str, n: Number, t: float) -> Result:
         if t < at:
             _rejected_send(t, "send_rejected_rate", msisdn, ip)
             return Result(429, "too many requests", at - t)
-    retry = _ip_send_retry(ip, t)
-    if retry is not None:
+    ip_sends = _recent("ipsend:" + ip, t, config.SEND_IP_WINDOW) if config.SEND_IP_MAX else None
+    if ip_sends is not None and len(ip_sends) >= config.SEND_IP_MAX:
         _rejected_send(t, "send_rejected_ip", msisdn, ip)
-        return Result(429, "too many requests from this ip", retry)
+        return Result(429, "too many requests from this ip", ip_sends[0] + config.SEND_IP_WINDOW - t)
     code = f"{secrets.randbelow(10**6):06d}"
     # Deliver first: if the SMS channel fails, the old code and the send count stay
     # as they were, and the user may retry at once instead of waiting for a 429.
@@ -198,25 +194,20 @@ def _send(msisdn: str, ip: str, n: Number, t: float) -> Result:
     n.otp_hash, n.otp_created, n.otp_used = _hash(msisdn, code), t, False
     # The step only goes up while the window has sends; it resets once the window is empty.
     n.sends.append((t, n.sends[-1][1] + 1 if n.sends else 1))
-    if config.SEND_IP_MAX:
-        key = "ipsend:" + ip
-        sends = _store.timestamps(key)
-        sends.append(t)
-        _store.save_timestamps(key, sends, config.SEND_IP_WINDOW)
+    if ip_sends is not None:
+        ip_sends.append(t)
+        _store.save_timestamps("ipsend:" + ip, ip_sends, config.SEND_IP_WINDOW)
     _event(t, "otp_sent", msisdn, ip)
     return Result(200, "sent")
 
 
 def _ip_allowed(ip: str, t: float) -> bool:
     """Count every verify from the IP; rejected ones (429) are not counted."""
-    key = "ip:" + ip
-    hits = _store.timestamps(key)
-    while hits and hits[0] <= t - config.IP_WINDOW:
-        hits.popleft()
+    hits = _recent("ip:" + ip, t, config.IP_WINDOW)
     if len(hits) >= config.IP_MAX:
         return False
     hits.append(t)
-    _store.save_timestamps(key, hits, config.IP_WINDOW)
+    _store.save_timestamps("ip:" + ip, hits, config.IP_WINDOW)
     return True
 
 
