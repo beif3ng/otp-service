@@ -185,4 +185,5 @@ backend/
 ## Задачи
 Формат: `- [ ] задача — владелец (A/B)`. Готово → удалить строку.
 
+- [ ] Посмотреть правки A в зоне B: tests (`test_send`, `test_hardening`, `test_security`), README (`--host 0.0.0.0`, рестарт между сценариями, ступень задержки, env > 0, тело > 4 KB, «вне рамок») — B
 - [ ] Разобраться в коде B до Q&A на демо (`history.py`, `/demo`, `scripts/attack.py`, `tests/`, дашборд) — сессия socratic-tutor — A
