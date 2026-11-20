@@ -137,6 +137,12 @@ backend/
 - Тайминги и лимиты — из env (дефолты = ТЗ), чтобы жюри могло ускорить сценарии.
 - Сценарии в `scenarios_examples.json` — примеры: сброс состояния между сценариями, передачу `client_ip` и шаг `advance` обеспечивает стенд жюри.
 
+### Интерфейс для тестов (A реализует, B пишет тесты по нему)
+- Время: `monkeypatch.setattr("app.otp.now", lambda: t)`; `now()` → float-секунды (Unix time).
+- Сброс: `app.otp.reset()` очищает хранилище, счётчики, лимиты и события — в autouse-фикстуре.
+- Outbox: env `OTP_OUTBOX` читается при каждой записи → в тесте `monkeypatch.setenv("OTP_OUTBOX", str(tmp_path / "sms.jsonl"))`; код — последняя строка для номера.
+- IP клиента: `TestClient(app, client=("192.0.2.10", 50000))` → `request.client.host == "192.0.2.10"`.
+
 ## Решения
 @decisions.md
 
