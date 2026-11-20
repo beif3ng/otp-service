@@ -107,6 +107,14 @@ def test_bad_env_number_stops_start(monkeypatch, value):
         config._num("OTP_TTL", 120)
 
 
+@pytest.mark.parametrize("name", ["OTP_TTL", "SEND_WINDOW", "LOCK_SECONDS", "IP_WINDOW", "SEND_IP_WINDOW"])
+def test_zero_window_stops_start(monkeypatch, name):
+    """0 would turn the protection off: IP_WINDOW=0 never limits, LOCK_SECONDS=0 never locks."""
+    monkeypatch.setenv(name, "0")
+    with pytest.raises(SystemExit, match=name):
+        config._num(name, 1, positive=True)
+
+
 @pytest.mark.parametrize("value", ["0", "20.9"])
 def test_bad_env_count_stops_start(monkeypatch, value):
     monkeypatch.setenv("SEND_MAX", value)

@@ -12,8 +12,9 @@ load_dotenv()
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
-def _num(name: str, default: float, minimum: float = 0) -> float:
-    """A number from env; a bad value stops the start with a clear message."""
+def _num(name: str, default: float, minimum: float = 0, positive: bool = False) -> float:
+    """A number from env; a bad value stops the start with a clear message.
+    positive: windows, TTL and lock, where 0 would silently turn a protection off."""
     raw = os.environ.get(name)
     if raw is None:
         return default
@@ -21,8 +22,9 @@ def _num(name: str, default: float, minimum: float = 0) -> float:
         value = float(raw)
     except ValueError:
         raise SystemExit(f"env {name}={raw!r}: expected a number") from None
-    if not math.isfinite(value) or value < minimum:
-        raise SystemExit(f"env {name}={raw!r}: expected a number >= {minimum:g}")
+    if not math.isfinite(value) or value < minimum or (positive and value <= 0):
+        bound = "> 0" if positive else f">= {minimum:g}"
+        raise SystemExit(f"env {name}={raw!r}: expected a number {bound}")
     return value
 
 
@@ -33,9 +35,9 @@ def _int(name: str, default: int, minimum: int) -> int:
     return int(value)
 
 
-OTP_TTL = _num("OTP_TTL", 120)  # code lifetime, s; elapsed >= TTL -> 410
+OTP_TTL = _num("OTP_TTL", 120, positive=True)  # code lifetime, s; elapsed >= TTL -> 410
 
-SEND_WINDOW = _num("SEND_WINDOW", 600)  # window (t - 600, t] for send count
+SEND_WINDOW = _num("SEND_WINDOW", 600, positive=True)  # window (t - 600, t] for send count
 SEND_MAX = _int("SEND_MAX", 3, minimum=1)  # successful sends per window
 # Delay after the 1st, 2nd and 3rd send in the window.
 SEND_DELAYS = (
@@ -45,15 +47,15 @@ SEND_DELAYS = (
 )
 
 VERIFY_MAX_FAILS = _int("VERIFY_MAX_FAILS", 5, minimum=1)  # the 5th wrong code -> 423
-LOCK_SECONDS = _num("LOCK_SECONDS", 900)  # lock [t, t + 900)
+LOCK_SECONDS = _num("LOCK_SECONDS", 900, positive=True)  # lock [t, t + 900)
 
-IP_WINDOW = _num("IP_WINDOW", 60)  # window (t - 60, t] for verify per IP
+IP_WINDOW = _num("IP_WINDOW", 60, positive=True)  # window (t - 60, t] for verify per IP
 IP_MAX = _int("IP_MAX", 20, minimum=1)  # the 21st verify -> 429
 
 # Anti SMS pumping: successful sends per IP in the window. 0 = off (default):
 # hidden jury scenarios may send to many numbers from one IP.
 SEND_IP_MAX = _int("SEND_IP_MAX", 0, minimum=0)
-SEND_IP_WINDOW = _num("SEND_IP_WINDOW", 600)
+SEND_IP_WINDOW = _num("SEND_IP_WINDOW", 600, positive=True)
 
 # Cost of one SMS for "saved at least N som" on the dashboard: the lowest official
 # Beeline KG SMS price (beeline.kg retail tariffs). Business A2P traffic costs more.
