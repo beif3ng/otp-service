@@ -69,7 +69,7 @@ backend/
 - Код в открытом виде появляется только в канале доставки (`outbox/sms.jsonl`). В хранилище — только HMAC, в журнале безопасности и в остальных логах — ни кода, ни хеша.
 - Не добавляй: auth, БД (кроме Redis-бонуса), абстракции «на будущее», новые зависимости без явной нужды.
 - После изменения: `uv run pytest`, потом коммит. Поменял зависимости → перегенерируй `requirements.txt`.
-- Git: маленькие коммиты, `git pull --rebase` перед push. `main` всегда запускается командой из README.
+- Git: маленькие коммиты, `git pull --rebase` в начале задачи и перед push. `main` всегда запускается командой из README.
 - Commit message: `area: summary` — английский, imperative, lowercase, без точки в конце, ≤ 50 символов. area: `backend`, `tests`, `scripts`, `infra` (compose, Dockerfile), `docs` (`CLAUDE.md`, `README.md`). Пример: `backend: add verify lockout`. Body — только если неочевидно, зачем.
 - Задача готова → удали её строку из «Задач».
 - Вторая сессия Claude Code у человека → `claude -w <name>` из корня репо (копия в `.claude/worktrees/<name>`, ветка от `origin/main`). В копии: `uv sync` в `backend/`, сервер на `--port 8001`. Готово → `git pull --rebase origin main`, `git push origin HEAD:main`. Перед выходом останови dev server: на Windows живой процесс держит файлы.
