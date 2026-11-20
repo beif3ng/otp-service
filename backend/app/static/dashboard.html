@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OTP Shield · события безопасности</title>
+<style>
+  /* Catppuccin Mocha */
+  :root {
+    --crust: #11111b; --mantle: #181825; --base: #1e1e2e;
+    --surface0: #313244; --surface1: #45475a; --overlay0: #6c7086;
+    --subtext0: #a6adc8; --text: #cdd6f4;
+    --green: #a6e3a1; --red: #f38ba8; --peach: #fab387; --yellow: #f9e2af; --blue: #89b4fa;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--base); color: var(--text);
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-variant-numeric: tabular-nums;
+  }
+  main { max-width: 1100px; margin: 0 auto; padding: 28px 24px 48px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  h1 { margin: 0; font-size: 22px; font-weight: 600; }
+  h2 { margin: 0 0 12px; font-size: 15px; font-weight: 600; color: var(--subtext0); }
+  .status { color: var(--subtext0); font-size: 13px; display: flex; align-items: center; gap: 8px; }
+  .status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+  .status.down::before { background: var(--red); }
+
+  .hero {
+    margin: 24px 0 16px; padding: 24px; border-radius: 12px; background: var(--mantle);
+    border: 1px solid var(--surface0);
+  }
+  .hero .label { color: var(--subtext0); }
+  .hero .value { font-size: 52px; font-weight: 600; line-height: 1.1; margin: 4px 0; }
+  .hero .value small { font-size: 24px; font-weight: 500; color: var(--subtext0); }
+  .hero .note { color: var(--overlay0); font-size: 13px; }
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 28px; }
+  .tile { padding: 16px; border-radius: 12px; background: var(--mantle); border: 1px solid var(--surface0); }
+  .tile .label { color: var(--subtext0); font-size: 13px; display: flex; align-items: center; gap: 8px; }
+  .tile .value { font-size: 30px; font-weight: 600; margin-top: 4px; }
+  .tile .note { color: var(--overlay0); font-size: 12px; }
+
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--overlay0); }
+  .good { --tone: var(--green); } .attack { --tone: var(--red); } .refused { --tone: var(--peach); }
+  .info { --tone: var(--blue); } .fault { --tone: var(--yellow); }
+  .good .dot, .attack .dot, .refused .dot, .info .dot, .fault .dot,
+  .dot.good, .dot.attack, .dot.refused, .dot.info, .dot.fault { background: var(--tone); }
+
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--surface0); }
+  th { color: var(--overlay0); font-weight: 500; font-size: 13px; }
+  td.time, td.who { color: var(--subtext0); white-space: nowrap; }
+  td.detail { color: var(--subtext0); }
+  .kind { display: inline-flex; align-items: center; gap: 8px; }
+  tbody tr.fresh { animation: fresh 1.5s ease-out; }
+  @keyframes fresh { from { background: var(--surface0); } to { background: transparent; } }
+  .empty { color: var(--overlay0); padding: 24px 12px; }
+  footer { margin-top: 24px; color: var(--overlay0); font-size: 12px; }
+  @media (prefers-reduced-motion: reduce) { tbody tr.fresh { animation: none; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>OTP Shield · события безопасности</h1>
+    <div id="status" class="status">подключение…</div>
+  </header>
+
+  <section class="hero" aria-label="Сэкономлено">
+    <div class="label">Сэкономлено на SMS, не меньше</div>
+    <div class="value"><span id="saved">0</span> <small>сом</small></div>
+    <div class="note" id="saved-note">отклонённые запросы кода, за которые бизнес не заплатил оператору</div>
+  </section>
+
+  <section class="tiles" aria-label="Счётчики с запуска">
+    <div class="tile attack">
+      <div class="label"><span class="dot"></span>Отбито попыток перебора</div>
+      <div class="value" id="t-brute">0</div>
+      <div class="note">неверные коды и лимит verify по IP</div>
+    </div>
+    <div class="tile refused">
+      <div class="label"><span class="dot"></span>Заблокировано номеров</div>
+      <div class="value" id="t-locked">0</div>
+      <div class="note">5 неверных кодов → блокировка на 15 мин</div>
+    </div>
+    <div class="tile refused">
+      <div class="label"><span class="dot"></span>Отклонено SMS</div>
+      <div class="value" id="t-refused">0</div>
+      <div class="note">частые запросы, блокировка, лимит по IP</div>
+    </div>
+    <div class="tile info">
+      <div class="label"><span class="dot"></span>Выдано кодов</div>
+      <div class="value" id="t-sent">0</div>
+      <div class="note">успешных входов: <span id="t-ok">0</span></div>
+    </div>
+  </section>
+
+  <section aria-label="Лента событий">
+    <h2>Последние события</h2>
+    <table>
+      <thead><tr><th>Время</th><th>Событие</th><th>Номер</th><th>IP</th><th>Детали</th></tr></thead>
+      <tbody id="feed"><tr><td colspan="5" class="empty">Загрузка…</td></tr></tbody>
+    </table>
+  </section>
+
+  <footer>Счётчики — с запуска сервиса, лента — последние 50 событий. Номера и IP частично скрыты. Коды в журнал не пишутся.</footer>
+</main>
+
+<script>
+const POLL_MS = 2000;
+const FEED_ROWS = 50;
+
+// Event type -> label and tone (tone also shown as text, never color alone).
+const KINDS = {
+  otp_sent:             ["Код выдан", "info"],
+  verify_ok:            ["Успешный вход", "good"],
+  verify_failed:        ["Неверный код", "attack"],
+  number_locked:        ["Номер заблокирован", "refused"],
+  verify_rejected_ip:   ["Лимит verify по IP", "refused"],
+  send_rejected_locked: ["SMS не отправлено: номер заблокирован", "refused"],
+  send_rejected_rate:   ["SMS не отправлено: слишком часто", "refused"],
+  send_rejected_ip:     ["SMS не отправлено: лимит по IP", "refused"],
+  delivery_failed:      ["Сбой доставки", "fault"],
+};
+
+const num = new Intl.NumberFormat("ru-RU");
+const som = new Intl.NumberFormat("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const $ = (id) => document.getElementById(id);
+let lastTop = null;
+
+function maskMsisdn(m) {
+  return m && m.length === 12 ? m.slice(0, 6) + "***" + m.slice(9) : (m || "—");
+}
+
+function maskIp(ip) {
+  if (!ip) return "—";
+  if (ip.startsWith("127.") || ip === "::1") return ip; // local demo: nothing to hide
+  const v4 = ip.split(".");
+  if (v4.length === 4) return v4.slice(0, 3).join(".") + ".x";
+  return ip.split(":").slice(0, 3).join(":") + ":…";
+}
+
+function time(ts) {
+  return ts ? ts.slice(11, 19) : "";
+}
+
+function detail(e) {
+  if (e.type === "verify_failed" && e.fails) return `ошибка ${e.fails} из 5`;
+  if (e.type === "number_locked" && e.until) return `до ${time(e.until)}`;
+  if (e.saved_som) return `+${som.format(e.saved_som)} сом`;
+  return "";
+}
+
+function cell(text, cls) {
+  const td = document.createElement("td");
+  if (cls) td.className = cls;
+  td.textContent = text;
+  return td;
+}
+
+function row(e, fresh) {
+  const [label, tone] = KINDS[e.type] || [e.type, ""];
+  const tr = document.createElement("tr");
+  if (fresh) tr.className = "fresh";
+  tr.append(cell(time(e.ts), "time"));
+  const kind = document.createElement("td");
+  const span = document.createElement("span");
+  span.className = "kind " + tone;
+  const dot = document.createElement("span");
+  dot.className = "dot";
+  span.append(dot, label);
+  kind.append(span);
+  tr.append(kind, cell(maskMsisdn(e.msisdn), "who"), cell(maskIp(e.ip), "who"), cell(detail(e), "detail"));
+  return tr;
+}
+
+function renderStats(s) {
+  const c = s.counts || {};
+  const n = (k) => c[k] || 0;
+  $("saved").textContent = som.format(s.saved_som || 0);
+  $("t-brute").textContent = num.format(n("verify_failed") + n("verify_rejected_ip"));
+  $("t-locked").textContent = num.format(n("number_locked"));
+  $("t-refused").textContent = num.format(n("send_rejected_locked") + n("send_rejected_rate") + n("send_rejected_ip"));
+  $("t-sent").textContent = num.format(n("otp_sent"));
+  $("t-ok").textContent = num.format(n("verify_ok"));
+}
+
+function renderFeed(events) {
+  const feed = $("feed");
+  const shown = events.slice(0, FEED_ROWS);
+  if (!shown.length) {
+    const tr = document.createElement("tr");
+    tr.append(cell("Событий пока нет: запросите код через /otp/send или запустите scripts/attack.py", "empty"));
+    tr.firstChild.colSpan = 5;
+    feed.replaceChildren(tr);
+    return;
+  }
+  // Rows newer than the previous top get a short highlight (skipped on the first render).
+  const top = JSON.stringify(shown[0]);
+  let fresh = lastTop === null ? 0 : shown.findIndex((e) => JSON.stringify(e) === lastTop);
+  if (fresh < 0) fresh = shown.length;
+  lastTop = top;
+  feed.replaceChildren(...shown.map((e, i) => row(e, i < fresh)));
+}
+
+async function poll() {
+  try {
+    const [stats, events] = await Promise.all(
+      ["stats", "events"].map((p) => fetch("/" + p, { cache: "no-store" }).then((r) => {
+        if (!r.ok) throw new Error(r.status);
+        return r.json();
+      }))
+    );
+    renderStats(stats);
+    renderFeed(events);
+    $("status").className = "status";
+    $("status").textContent = "обновлено " + new Date().toLocaleTimeString("ru-RU");
+  } catch {
+    $("status").className = "status down";
+    $("status").textContent = "нет связи с сервером, повтор через 2 с";
+  }
+}
+
+poll();
+setInterval(poll, POLL_MS);
+</script>
+</body>
+</html>
