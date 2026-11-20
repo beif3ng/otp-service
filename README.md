@@ -9,7 +9,7 @@ REST API выдачи и проверки одноразовых кодов с �
 Python 3.12+, без Docker и внешних сервисов. Одной строкой из корня репозитория (Linux / macOS):
 
 ```
-cd backend && python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt && uvicorn app.main:app --workers 1 --no-proxy-headers
+cd backend && python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt && uvicorn app.main:app --host 0.0.0.0 --workers 1 --no-proxy-headers
 ```
 
 Windows (PowerShell): то же, но `python -m venv .venv; .venv\Scripts\Activate.ps1`.
@@ -17,6 +17,7 @@ Windows (PowerShell): то же, но `python -m venv .venv; .venv\Scripts\Activ
 Сервис — http://127.0.0.1:8000, Swagger — http://127.0.0.1:8000/docs.
 
 - venv нужен: на свежих Debian / Ubuntu `pip install` в системный Python запрещён (PEP 668). Нет модуля venv → `sudo apt install python3-venv`.
+- `--host 0.0.0.0`: сервис принимает соединения на любой loopback-адрес, в том числе `127.0.0.2` (на Linux сокет на `127.0.0.1` отказал бы такому соединению).
 - Ровно 1 worker: состояние и lock, который делает `verify` атомарным, живут в одном процессе.
 - Состояние (коды, лимиты, блокировки) — в памяти: чистое состояние для сценария — перезапуск процесса. `outbox/sms.jsonl` и `security.log` при этом не мешают: код номера — последняя строка для него.
 - `--no-proxy-headers`: IP клиента — адрес соединения. Без флага uvicorn верит `X-Forwarded-For` с `127.0.0.1`, и перебор с подменой заголовка обошёл бы лимит 20 `verify` в минуту с одного IP.
