@@ -17,3 +17,7 @@ package = false
 dev = [
     "pytest>=9.2.0",
 ]
+
+[tool.ruff]
+# Rules = ruff defaults of this exact version; another version would check a different set.
+required-version = "==0.17.6"

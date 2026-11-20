@@ -58,6 +58,7 @@ backend/
 |---|---|---|
 | Dev-сервер | `backend/` | `uv run uvicorn app.main:app --reload` (порт 8000, Swagger — `/docs`) |
 | Тесты | `backend/` | `uv run pytest` |
+| Линтер | `backend/` | `uvx ruff@0.17.6 check .` (правила — дефолт этой версии; версия закреплена в `pyproject.toml`) |
 | Атака | `backend/` | `uv run python scripts/attack.py` (сервер должен быть запущен) |
 | `requirements.txt` | `backend/` | `uv export --no-hashes --no-dev -o requirements.txt` |
 | Запуск как у жюри | корень | команда из `README.md`; проверяем перед каждым push в `main` |
@@ -74,7 +75,7 @@ backend/
 - Тесты обязательны (это баллы за качество кода): pytest на каждый сценарий жюри — успех, истечение, повторное использование, задержки, лимиты, блокировка, параллельные запросы.
 - Код в открытом виде появляется только в канале доставки (`outbox/sms.jsonl`). В хранилище — только HMAC, в журнале безопасности и в остальных логах — ни кода, ни хеша.
 - Не добавляй: auth, БД (кроме Redis-бонуса), абстракции «на будущее», новые зависимости без явной нужды.
-- После изменения: `uv run pytest`, потом коммит. Поменял зависимости → перегенерируй `requirements.txt`.
+- После изменения: `uv run pytest` и ruff (см. «Команды»), потом коммит. Поменял зависимости → перегенерируй `requirements.txt`.
 - Git: маленькие коммиты, `git pull --rebase` в начале задачи и перед push. `main` всегда запускается командой из README.
 - Commit message: `area: summary` — английский, imperative, lowercase, без точки в конце, ≤ 50 символов. area: `backend`, `tests`, `scripts`, `infra` (compose, Dockerfile), `docs` (`CLAUDE.md`, `README.md`). Пример: `backend: add verify lockout`. Body — только если неочевидно, зачем.
 - Задача готова → удали её строку из «Задач».
