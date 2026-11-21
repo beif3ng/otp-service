@@ -128,7 +128,8 @@ def test_zero_window_stops_start(name):
     """0 would turn the protection off: IP_WINDOW=0 never limits, LOCK_SECONDS=0 never locks.
     A fresh process imports the real config, so a setting that lost positive=True fails here."""
     env = {k: v for k, v in os.environ.items() if k != "REDIS_URL"} | {name: "0"}
-    r = subprocess.run([sys.executable, "-c", "import app.config"], cwd=BACKEND, env=env, capture_output=True, text=True)
+    cmd = [sys.executable, "-c", "import app.config"]
+    r = subprocess.run(cmd, check=False, cwd=BACKEND, env=env, capture_output=True, text=True)  # failing is the point
     assert r.returncode != 0
     assert f"env {name}='0'" in r.stderr
 
