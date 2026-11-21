@@ -3,8 +3,9 @@
 Правила для агентов. Люди читают этот файл тоже: «Идея», «Контракт» и «Задачи» здесь — единственный источник правды.
 
 ## Команда и зоны
-- **A** = `beif3ng` — ядро: `app/otp.py`, `app/routers/otp.py`, `app/config.py`; лимиты, блокировки, атомарность; бонус Docker Compose + Redis.
-- **B** = `acided` — `scripts/attack.py`, `tests/`, `README.md`; бонус — дашборд событий.
+- **A** = `beif3ng` — ядро: `app/otp.py`, `app/routers/otp.py`, `app/config.py`, `app/store.py`, `app/main.py`, `app/sms_gateway.py`; лимиты, блокировки, атомарность; бонус Docker Compose + Redis; infra (`compose*.yaml`, `Caddyfile`, `Dockerfile`, `deploy.yml`), `assets/`.
+- **B** = `acided` — `scripts/attack.py`, `scripts/attack_loop.py`, `scripts/scenarios.py`, `tests/`, `README.md`; `app/history.py`, `app/static/` (`dashboard.html`, `demo.html`); бонус — дашборд событий.
+- На питче и вопросах каждый отвечает за свою зону.
 - В начале сессии уточни, с кем работаешь (A или B), если это не сказано.
 
 ## Оценка
