@@ -185,4 +185,4 @@ backend/
 
 ## Задачи
 Формат: `- [ ] задача — владелец (A/B)`. Готово → удалить строку.
-- [ ] дорешать quiz по зоне A: send delays, коды ответов, HMAC, Redis / `store.py`, infra; потом `/config promptSuggestionEnabled=true` — A
+- [ ] дорешать quiz по зоне A: lockout, Redis / `store.py`, infra + повтор send delays (окно 600 с), кодов ответов и HMAC; потом `/config promptSuggestionEnabled=true` — A
