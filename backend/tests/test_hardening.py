@@ -1,11 +1,17 @@
 """Red team fixes: bad input, journal flooding, delivery and storage failures,
 idle numbers forgotten, env validation."""
 
+import os
+import subprocess
+import sys
+from pathlib import Path
+
 import pytest
 
 from app import config, otp, store
 from tests.conftest import IP, MSISDN, wrong
 
+BACKEND = Path(__file__).resolve().parents[1]
 DEEP_JSON = "[" * 100_000 + "]" * 100_000
 
 
@@ -118,11 +124,13 @@ def test_bad_env_number_stops_start(monkeypatch, value):
 
 
 @pytest.mark.parametrize("name", ["OTP_TTL", "SEND_WINDOW", "LOCK_SECONDS", "IP_WINDOW", "SEND_IP_WINDOW"])
-def test_zero_window_stops_start(monkeypatch, name):
-    """0 would turn the protection off: IP_WINDOW=0 never limits, LOCK_SECONDS=0 never locks."""
-    monkeypatch.setenv(name, "0")
-    with pytest.raises(SystemExit, match=name):
-        config._num(name, 1, positive=True)
+def test_zero_window_stops_start(name):
+    """0 would turn the protection off: IP_WINDOW=0 never limits, LOCK_SECONDS=0 never locks.
+    A fresh process imports the real config, so a setting that lost positive=True fails here."""
+    env = {k: v for k, v in os.environ.items() if k != "REDIS_URL"} | {name: "0"}
+    r = subprocess.run([sys.executable, "-c", "import app.config"], cwd=BACKEND, env=env, capture_output=True, text=True)
+    assert r.returncode != 0
+    assert f"env {name}='0'" in r.stderr
 
 
 @pytest.mark.parametrize("value", ["0", "20.9"])
