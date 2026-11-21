@@ -185,5 +185,4 @@ backend/
 
 ## Задачи
 Формат: `- [ ] задача — владелец (A/B)`. Готово → удалить строку.
-- [ ] перед push в 08:45 запустить сервис командой из README, как у жюри — A
 - [ ] дорешать quiz по зоне A: send delays, коды ответов, HMAC, Redis / `store.py`, infra; потом `/config promptSuggestionEnabled=true` — A
